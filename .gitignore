@@ -1,0 +1,20 @@
+########################################################################
+# .gitignore for yase                                                  #
+########################################################################
+
+# User configuration makefile
+/config.mk
+
+# Objects and libraries files
+*.o
+*.a
+*.so
+
+# Binaries, distribution archives, build directory
+/yase
+/yase-*.tar.*
+/build/
+
+# Editor-generated files, like Vim swap files
+*~
+*.swp

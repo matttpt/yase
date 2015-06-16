@@ -1,0 +1,25 @@
+########################################################################
+# yase - config.mk                                                     #
+# Edit build options here.                                             #
+########################################################################
+
+# Compiler configuration
+# CC:     what C compiler to use
+# CFLAGS: what basic options to pass to the C compiler
+CC=cc
+CFLAGS=-Wall -O3 -std=c99
+
+# Enable this for debugging.  Disabled by default.
+#CFLAGS+=-g
+
+# Enable this to tune to your native CPU, but not to generate assembly
+# specific to it.  If you select this, do not select the next option.
+# Disabled by default (as the next option is enabled by default).
+#CFLAGS+=-mtune=native
+
+# Enable this to generate code specific to your native CPU.  If you
+# select this, do not select the above option.  Enabled by default.
+CFLAGS+=-march=native
+
+# Size of a sieve segment in bytes (default: 32 KB)
+SEGMENT_BYTES=32768
