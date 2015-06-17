@@ -65,6 +65,9 @@ struct multiple * sieve_seed(
 		abort();
 	}
 
+	/* Zero the sieve */
+	memset(seed_sieve, 0, final_byte + 1);
+
 	/* Run the sieve */
 	for(i = 1; i < (final_byte + 1) * 8; i++)
 	{
