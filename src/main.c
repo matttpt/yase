@@ -183,6 +183,9 @@ int main(int argc, char * argv[])
 		multiples = multiples->next;
 		free(to_free);
 	}
+
+	/* Clean up the pre-sieve data */
+	presieve_cleanup();
 	
 	/* Print number found and elapsed time */
 	elapsed = (clock() - start) / CLOCKS_PER_SEC;

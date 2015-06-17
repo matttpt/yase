@@ -83,6 +83,12 @@ void presieve_init(void)
 	}
 }
 
+/* Pre-sieve cleanup */
+void presieve_cleanup(void)
+{
+	free(presieve);
+}
+
 /* Returns the maximum prime number that will be handled by
    pre-sieving */
 unsigned long presieve_max_prime(void)
