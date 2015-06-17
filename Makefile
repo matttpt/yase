@@ -82,8 +82,7 @@ build/%.o: src/%.c $(HEADERS) | build
 .PHONY: clean
 clean:
 	rm -f $(OBJECTS) $(HEADERS_AUTOGEN) yase
-	rmdir build/include
-	rmdir build
+	rm -rf build
 
 # Souce distribution archive
 $(DIST_NAME).tar.gz: $(DIST_FILES)
