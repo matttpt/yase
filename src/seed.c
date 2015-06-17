@@ -92,7 +92,7 @@ struct multiple * sieve_seed(
 
 			/* If this prime is in the range that we need sieving primes,
 			   record it. */
-			if(prime > presieve_max_prime() && i <= final_bit)
+			if(i > PRESIEVE_PRIMES && i <= final_bit)
 			{
 				/* Allocate new multiple structure */
 				mult_s = malloc(sizeof(struct multiple));

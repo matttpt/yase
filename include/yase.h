@@ -108,7 +108,6 @@ void sieve_segment(
 
 void presieve_init(void);
 void presieve_cleanup(void);
-unsigned long presieve_max_prime(void);
 void presieve_copy(
 		unsigned char * sieve,
 		unsigned long start,

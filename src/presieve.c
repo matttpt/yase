@@ -89,13 +89,6 @@ void presieve_cleanup(void)
 	free(presieve);
 }
 
-/* Returns the maximum prime number that will be handled by
-   pre-sieving */
-unsigned long presieve_max_prime(void)
-{
-	return presieve_primes[PRESIEVE_PRIMES - 1];
-}
-
 /* Copies pre-sieve data into a sieve buffer */
 void presieve_copy(
 		unsigned char * sieve,
