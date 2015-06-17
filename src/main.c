@@ -105,6 +105,10 @@ int main(int argc, char * argv[])
 	/* Get start CPU time */
 	start = clock();
 
+	/* Initialize pre-sieve */
+	puts("Initializing pre-sieve . . .");
+	presieve_init();
+
 	/* Run the sieve for seeds */
 	puts("Finding sieving primes . . .");
 	multiples = sieve_seed(max, &count, &next_byte);

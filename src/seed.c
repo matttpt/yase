@@ -82,7 +82,7 @@ struct multiple * sieve_seed(
 			mult      = prime * prime;
 			prime_adj = prime / 30;
 			byte      = mult / 30;
-			e         = &wheel[(i % 8) * 8];
+			e         = &wheel[(i % 8) * 8 + (i % 8)];
 			while(byte <= final_byte)
 			{
 				seed_sieve[byte] |= e->mask;
@@ -92,7 +92,7 @@ struct multiple * sieve_seed(
 
 			/* If this prime is in the range that we need sieving primes,
 			   record it. */
-			if(i <= final_bit)
+			if(prime > presieve_max_prime() && i <= final_bit)
 			{
 				/* Allocate new multiple structure */
 				mult_s = malloc(sizeof(struct multiple));

@@ -42,8 +42,8 @@ void sieve_segment(
 {
 	unsigned long i;
 
-	/* Zero sieve */
-	memset(sieve, 0, SEGMENT_BYTES);
+	/* Copy in pre-sieve data */
+	presieve_copy(sieve, start, end);
 
 	/* Mark multiples */
 	while(multiples != NULL)
