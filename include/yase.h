@@ -47,13 +47,13 @@ struct wheel_elem
 {
 	unsigned char delta_f; /* Delta factor              */
 	unsigned char delta_c; /* Delta correction          */
-	unsigned char mask;    /* Bitmask to set bit */
-	         char next;    /* Offset to next wheel_elem */
+	unsigned char mask;    /* Bitmask to set bit        */
+	  signed char next;    /* Offset to next wheel_elem */
 };
 
 /* Exposed wheel tables.  Even though "wheel" is not const (so that
    wheel_init(void) can generate it), obviously don't modify it. */
-extern struct wheel_elem    wheel[64];
+extern struct wheel_elem   wheel[64];
 extern const unsigned char wheel_offs[8];
 extern const unsigned char wheel_deltas[8];
 extern const unsigned char wheel_last_idx[30];
