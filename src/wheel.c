@@ -40,12 +40,11 @@ const unsigned char wheel_last_idx[30] =
 /* Routine to construct the wheel table */
 void wheel_init(void)
 {
-	unsigned int i, j, wheel_offs_idx;
+	unsigned int i, j;
 
 	/* Each cycle of 8 is for one initial prime offset */
 	for(i = 0; i < 8; i++)
 	{
-		wheel_offs_idx = i;
 		for(j = 0; j < 8; j++)
 		{
 			unsigned char offs_p, offs_f, delta, bit_offs;
@@ -54,8 +53,8 @@ void wheel_init(void)
 			   other multiple factor, and the delta to the next
 			   multiple factor */
 			offs_p = wheel_offs[i];
-			offs_f = wheel_offs[wheel_offs_idx];
-			delta  = wheel_deltas[wheel_offs_idx];
+			offs_f = wheel_offs[j];
+			delta  = wheel_deltas[j];
 
 			/* Record the delta factor */
 			wheel[i * 8 + j].delta_f = delta;
@@ -78,10 +77,6 @@ void wheel_init(void)
 			{
 				wheel[i * 8 + j].next = 1;
 			}
-
-			/* Advance wheel_offs_idx */
-			wheel_offs_idx++;
-			wheel_offs_idx &= 7;
 		}
 	}
 }

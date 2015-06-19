@@ -102,4 +102,15 @@ void sieve_segment(
 		struct multiple * multiples,
 		unsigned long * count);
 
+/**********************************************************************\
+ * Pre-sieve mechanism                                                *
+\**********************************************************************/
+
+void presieve_init(void);
+void presieve_cleanup(void);
+void presieve_copy(
+		unsigned char * sieve,
+		unsigned long start,
+		unsigned long end);
+
 #endif /* !YASE_H */

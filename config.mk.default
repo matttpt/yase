@@ -23,3 +23,10 @@ CFLAGS+=-march=native
 
 # Size of a sieve segment in bytes (default: 32 KB)
 SEGMENT_BYTES=32768
+
+# Number of primes to pre-sieve.  You can pick anything from 1 to 7,
+# inclusive.
+#  - 5: requires ~0.3 MB
+#  - 6: default and recommended, requires ~7 MB
+#  - 7: requires ~206 MB
+PRESIEVE_PRIMES=6

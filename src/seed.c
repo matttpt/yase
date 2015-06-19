@@ -65,11 +65,11 @@ struct multiple * sieve_seed(
 		abort();
 	}
 
-	/* Zero the sieve */
-	memset(seed_sieve, 0, final_byte + 1);
+	/* Copy in pre-sieve data */
+	presieve_copy(seed_sieve, 0, final_byte + 1);
 
 	/* Run the sieve */
-	for(i = 1; i < (final_byte + 1) * 8; i++)
+	for(i = PRESIEVE_PRIMES + 1; i < (final_byte + 1) * 8; i++)
 	{
 		if((seed_sieve[i / 8] & ((unsigned char) 1U << (i % 8))) == 0)
 		{
@@ -85,7 +85,7 @@ struct multiple * sieve_seed(
 			mult      = prime * prime;
 			prime_adj = prime / 30;
 			byte      = mult / 30;
-			e         = &wheel[(i % 8) * 8];
+			e         = &wheel[(i % 8) * 8 + (i % 8)];
 			while(byte <= final_byte)
 			{
 				seed_sieve[byte] |= e->mask;
