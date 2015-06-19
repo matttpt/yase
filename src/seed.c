@@ -65,8 +65,11 @@ struct multiple * sieve_seed(
 		abort();
 	}
 
+	/* Copy in pre-sieve data */
+	presieve_copy(seed_sieve, 0, final_byte + 1);
+
 	/* Run the sieve */
-	for(i = 1; i < (final_byte + 1) * 8; i++)
+	for(i = PRESIEVE_PRIMES + 1; i < (final_byte + 1) * 8; i++)
 	{
 		if((seed_sieve[i / 8] & ((unsigned char) 1U << (i % 8))) == 0)
 		{
@@ -92,7 +95,7 @@ struct multiple * sieve_seed(
 
 			/* If this prime is in the range that we need sieving primes,
 			   record it. */
-			if(i > PRESIEVE_PRIMES && i <= final_bit)
+			if(i <= final_bit)
 			{
 				/* Allocate new multiple structure */
 				mult_s = malloc(sizeof(struct multiple));

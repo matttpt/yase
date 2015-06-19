@@ -50,7 +50,7 @@
  */
 int main(int argc, char * argv[])
 {
-	unsigned long next_byte, end_byte, max, count = WHEEL_PRIMES_SKIPPED;
+	unsigned long next_byte, end_byte, max, count;
 	unsigned int percent;
 	double start, elapsed;
 	char * strtoul_end;
@@ -93,6 +93,10 @@ int main(int argc, char * argv[])
 	/* Initialization message */
 	printf("yase %u.%u.%u starting, checking numbers <= %lu\n",
 	       VERSION_MAJOR, VERSION_MINOR, VERSION_PATCH, max);
+
+	/* The sieving skips over all of the wheel primes and the pre-sieved
+	   primes, so account for them manually */
+	count = WHEEL_PRIMES_SKIPPED + PRESIEVE_PRIMES;
 
 	/* Initialize wheel table */
 	puts("Initializing wheel table . . .");
