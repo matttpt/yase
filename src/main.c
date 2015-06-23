@@ -154,7 +154,7 @@ int main(int argc, char * argv[])
 			   the end bit (first bit to be thrown out). */
 			if(max % 30 != 0)
 			{
-				seg_end_bit = (wheel_last_idx[max % 30] + 1) % 8;
+				seg_end_bit = (wheel30_last_idx[max % 30] + 1) % 8;
 			}
 		}
 

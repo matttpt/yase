@@ -34,17 +34,18 @@ static unsigned char * presieve;
 static unsigned long   presieve_len;
 
 /* List of first few primes and their wheel spokes */
-static unsigned long presieve_primes[7] =
-	{ 7, 11, 13, 17, 19, 23, 29 };
+static unsigned long presieve_primes[6] =
+	{ 11, 13, 17, 19, 23, 29 };
 
 /* Pre-sieve initialization */
 void presieve_init(void)
 {
-	unsigned long len;
+	struct wheel_elem * e;
+	unsigned long len, prime, prime_adj, byte;
 	unsigned int i;
 
 	/* Find the length of the buffer, and save to presieve_len */
-	len = 30;
+	len = 210;
 	for(i = 0; i < PRESIEVE_PRIMES; i++)
 	{
 		len *= presieve_primes[i];
@@ -63,17 +64,30 @@ void presieve_init(void)
 	/* Prepare to sieve */
 	memset(presieve, 0, len);
 
+	/*
+	 * Before we do the "requested" pre-sieve, we also pre-sieve 7.
+	 * While the mod 210 wheel factorization used in the sieve
+	 * eliminates the marking of multiples of 7 (increasing speed), the
+	 * bitset is still mod 30 and does not skip over multiples of 7.
+	 * Thus, we still need to pre-sieve 7.
+	 */
+	byte = 0;
+	e    = &wheel30[8];
+	while(byte < len)
+	{
+		presieve[byte] |= e->mask;
+		byte += e->delta_c;
+		e += e->next;
+	}
+
 	/* Run pre-sieve */
 	for(i = 0; i < PRESIEVE_PRIMES; i++)
 	{
-		unsigned long prime, prime_adj, byte;
-		struct wheel_elem * e;
-
 		/* Mark multiples for the current prime */
 		prime     = presieve_primes[i];
 		prime_adj = prime / 30;
 		byte      = prime / 30;
-		e         = &wheel[(i + 1) * 8];
+		e         = &wheel210[(i + 2) * 48];
 		while(byte < len)
 		{
 			presieve[byte] |= e->mask;

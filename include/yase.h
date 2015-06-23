@@ -35,8 +35,8 @@
  * Wheel structures                                                   *
 \**********************************************************************/
 
-/* Number of primes skipped by the wheel */
-#define WHEEL_PRIMES_SKIPPED (3U)
+/* Number of primes skipped by the primary sieving wheel (mod 210) */
+#define WHEEL_PRIMES_SKIPPED (4U)
 
 /*
  * This is based HEAVILY off the way that the "primesieve" program
@@ -51,12 +51,17 @@ struct wheel_elem
 	  signed char next;    /* Offset to next wheel_elem */
 };
 
-/* Exposed wheel tables.  Even though "wheel" is not const (so that
-   wheel_init(void) can generate it), obviously don't modify it. */
-extern struct wheel_elem   wheel[64];
-extern const unsigned char wheel_offs[8];
-extern const unsigned char wheel_deltas[8];
-extern const unsigned char wheel_last_idx[30];
+/* Exposed wheel tables.  Even though "wheel30", "wheel210" and
+   "wheel210_last_idx" are not const (so that wheel_init(void) can
+   generate them), obviously don't modify them. */
+extern struct wheel_elem   wheel30[64];
+extern const unsigned char wheel30_offs[8];
+extern const unsigned char wheel30_deltas[8];
+extern const unsigned char wheel30_last_idx[30];
+extern struct wheel_elem   wheel210[384];
+extern const unsigned char wheel210_offs[48];
+extern const unsigned char wheel210_deltas[48];
+extern unsigned char       wheel210_last_idx[210];
 
 /* Wheel initialization routine */
 void wheel_init(void);

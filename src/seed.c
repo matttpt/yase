@@ -54,7 +54,7 @@ struct multiple * sieve_seed(
 	*next_byte = final_byte + 1;
 	
 	/* Find the last bit up to which we need sieving primes for */
-	final_bit = final_byte * 8 + wheel_last_idx[max_seed % 30];
+	final_bit = final_byte * 8 + wheel30_last_idx[max_seed % 30];
 
 	/* We don't bother to segment for this process.  We allocate the
 	   sieve segment manually. */
@@ -69,11 +69,11 @@ struct multiple * sieve_seed(
 	presieve_copy(seed_sieve, 0, final_byte + 1);
 
 	/* Run the sieve */
-	for(i = PRESIEVE_PRIMES + 1; i < (final_byte + 1) * 8; i++)
+	for(i = PRESIEVE_PRIMES + 2; i < (final_byte + 1) * 8; i++)
 	{
 		if((seed_sieve[i / 8] & ((unsigned char) 1U << (i % 8))) == 0)
 		{
-			unsigned long prime, mult, prime_adj, byte;
+			unsigned long prime, mult, prime_adj, wheel_idx, byte;
 			struct wheel_elem * e;
 			struct multiple * mult_s;
 
@@ -81,11 +81,12 @@ struct multiple * sieve_seed(
 			(*count)++;
 
 			/* Mark multiples */
-			prime     = (i / 8) * 30 + wheel_offs[i % 8];
+			prime     = (i / 8) * 30 + wheel30_offs[i % 8];
 			mult      = prime * prime;
 			prime_adj = prime / 30;
 			byte      = mult / 30;
-			e         = &wheel[(i % 8) * 8 + (i % 8)];
+			wheel_idx = (i % 8) * 48 + wheel210_last_idx[prime % 210];
+			e         = &wheel210[wheel_idx];
 			while(byte <= final_byte)
 			{
 				seed_sieve[byte] |= e->mask;
