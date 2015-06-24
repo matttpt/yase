@@ -7,7 +7,7 @@ include config.mk
 
 # Version information
 VERSION_MAJOR=0
-VERSION_MINOR=1
+VERSION_MINOR=2
 VERSION_PATCH=0
 
 # List of source files to build

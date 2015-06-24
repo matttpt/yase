@@ -6,11 +6,12 @@ program.  It is invoked with a single argument, which gives the highest
 number to be checked for primality.  It currently employs the following
 methods to speed up its computations:
 
- - Efficient implementation of modulo 30 wheel factorization
+ - Efficient implementation of modulo 210 wheel factorization
  - Segmented sieve that fits in CPU L1 data cache
  - Use of an efficient lookup table to count primes after sieving
  - Processing of two sieving primes at once, to leverage
    instruction-level parallelism
+ - Pre-sieving of multiples of small sieving primes
 
 Additionally, each byte of the bit array used to sieve for primes
 covers a range of 30 numbers.  With a 32 KB sieve (fitting a common CPU
@@ -34,5 +35,5 @@ Then:
 The build options/parameters for yase can be changed by editing
 `config.mk`.  `config.mk.default` contains reasonable default values for
 each variable and a description of what each controls.  If you want to
-change the C compiler, compilation flags, or sieve segment size, take a
-look here.
+change the C compiler, compilation flags, sieve segment size, or
+pre-sieving behavior, take a look here.
