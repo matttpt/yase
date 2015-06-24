@@ -63,10 +63,10 @@ void sieve_segment(
 				while(byte1 < end && byte2 < end)
 				{
 					sieve[byte1 - start] |= e1->mask;
-					sieve[byte2 - start] |= e2->mask;
 					byte1 += e1->delta_f * m1->prime_adj + e1->delta_c;
-					byte2 += e2->delta_f * m2->prime_adj + e2->delta_c;
 					e1 += e1->next;
+					sieve[byte2 - start] |= e2->mask;
+					byte2 += e2->delta_f * m2->prime_adj + e2->delta_c;
 					e2 += e2->next;
 				}
 				while(byte1 < end)
