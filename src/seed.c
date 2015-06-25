@@ -30,13 +30,13 @@
 #include <yase.h>
 
 /* Sieves for the sieving primes */
-struct multiple * sieve_seed(
+struct prime * sieve_seed(
 		unsigned long max,
 		unsigned long * count,
 		unsigned long * next_byte)
 {
 	unsigned long i, max_seed, final_byte, final_bit;
-	struct multiple * multiples = NULL;
+	struct prime * primes = NULL;
 	unsigned char * seed_sieve;
 
 	/* This is the largest value such that value * value <= max.
@@ -73,9 +73,9 @@ struct multiple * sieve_seed(
 	{
 		if((seed_sieve[i / 8] & ((unsigned char) 1U << (i % 8))) == 0)
 		{
-			unsigned long prime, mult, prime_adj, wheel_idx, byte;
-			struct wheel_elem * e;
-			struct multiple * mult_s;
+			unsigned long prime, mult, prime_adj, byte;
+			unsigned int wheel_idx;
+			struct prime * prime_s;
 
 			/* Count the prime */
 			(*count)++;
@@ -86,36 +86,36 @@ struct multiple * sieve_seed(
 			prime_adj = prime / 30;
 			byte      = mult / 30;
 			wheel_idx = (i % 8) * 48 + wheel210_last_idx[prime % 210];
-			e         = &wheel210[wheel_idx];
 			while(byte <= final_byte)
 			{
-				seed_sieve[byte] |= e->mask;
-				byte += e->delta_f * prime_adj + e->delta_c;
-				e += e->next;
+				seed_sieve[byte] |= wheel210[wheel_idx].mask;
+				byte += wheel210[wheel_idx].delta_f * prime_adj;
+			  	byte += wheel210[wheel_idx].delta_c;
+				wheel_idx += wheel210[wheel_idx].next;
 			}
 
 			/* If this prime is in the range that we need sieving primes,
 			   record it. */
 			if(i <= final_bit)
 			{
-				/* Allocate new multiple structure */
-				mult_s = malloc(sizeof(struct multiple));
-				if(mult_s == NULL)
+				/* Allocate new sieving prime structure */
+				prime_s = malloc(sizeof(struct prime));
+				if(prime_s == NULL)
 				{
 					perror("malloc");
 					free(seed_sieve);
 					abort();
 				}
-				mult_s->next_byte = byte;
-				mult_s->prime_adj = prime_adj;
-				mult_s->stored_e  = e;
-				mult_s->next = multiples;
-				multiples = mult_s;
+				prime_s->next_byte = byte;
+				prime_s->prime_adj = prime_adj;
+				prime_s->wheel_idx = wheel_idx;
+				prime_s->next = primes;
+				primes = prime_s;
 			}
 		}
 	}
 
 	/* Clean up and return the list of multiples */
 	free(seed_sieve);
-	return multiples;
+	return primes;
 }

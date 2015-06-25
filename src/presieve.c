@@ -40,9 +40,8 @@ static unsigned long presieve_primes[6] =
 /* Pre-sieve initialization */
 void presieve_init(void)
 {
-	struct wheel_elem * e;
 	unsigned long len, prime, prime_adj, byte;
-	unsigned int i;
+	unsigned int i, wheel_idx;
 
 	/* Find the length of the buffer, and save to presieve_len */
 	len = 210;
@@ -71,13 +70,13 @@ void presieve_init(void)
 	 * bitset is still mod 30 and does not skip over multiples of 7.
 	 * Thus, we still need to pre-sieve 7.
 	 */
-	byte = 0;
-	e    = &wheel30[8];
+	byte      = 0;
+	wheel_idx = 8;
 	while(byte < len)
 	{
-		presieve[byte] |= e->mask;
-		byte += e->delta_c;
-		e += e->next;
+		presieve[byte] |= wheel30[wheel_idx].mask;
+		byte += wheel30[wheel_idx].delta_c;
+		wheel_idx += wheel30[wheel_idx].next;
 	}
 
 	/* Run pre-sieve */
@@ -87,12 +86,13 @@ void presieve_init(void)
 		prime     = presieve_primes[i];
 		prime_adj = prime / 30;
 		byte      = prime / 30;
-		e         = &wheel210[(i + 2) * 48];
+		wheel_idx = (i + 2) * 48;
 		while(byte < len)
 		{
-			presieve[byte] |= e->mask;
-			byte += e->delta_f * prime_adj + e->delta_c;
-			e += e->next;
+			presieve[byte] |= wheel210[wheel_idx].mask;
+			byte += wheel210[wheel_idx].delta_f * prime_adj;
+			byte += wheel210[wheel_idx].delta_c;
+			wheel_idx += wheel210[wheel_idx].next;
 		}
 	}
 }

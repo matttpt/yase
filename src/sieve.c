@@ -37,7 +37,7 @@ void sieve_segment(
 		unsigned long start,
 		unsigned long end,
 		unsigned long end_bit,
-		struct multiple * multiples,
+		struct prime * primes,
 		unsigned long * count)
 {
 	unsigned long i;
@@ -45,65 +45,70 @@ void sieve_segment(
 	/* Copy in pre-sieve data */
 	presieve_copy(sieve, start, end);
 
-	/* Mark multiples */
-	while(multiples != NULL)
+	/* Mark multiples of each sieving prime */
+	while(primes != NULL)
 	{
-		if(multiples->next_byte < end)
+		if(primes->next_byte < end)
 		{
 			/* Attempt to do two at a time to leverage ILP.  This is
 			   taken from primesieve. */
-			if(multiples->next != NULL && multiples->next->next_byte < end)
+			if(primes->next != NULL && primes->next->next_byte < end)
 			{
-				struct multiple * m1   = multiples;
-				struct multiple * m2   = multiples->next;
-				unsigned long byte1    = m1->next_byte;
-				unsigned long byte2    = m2->next_byte;
-				struct wheel_elem * e1 = m1->stored_e;
-				struct wheel_elem * e2 = m2->stored_e;
+				struct prime * p1   = primes;
+				struct prime * p2   = primes->next;
+				unsigned long byte1 = p1->next_byte;
+				unsigned long byte2 = p2->next_byte;
+				unsigned int wi1    = p1->wheel_idx;
+				unsigned int wi2    = p2->wheel_idx;
 				while(byte1 < end && byte2 < end)
 				{
-					sieve[byte1 - start] |= e1->mask;
-					byte1 += e1->delta_f * m1->prime_adj + e1->delta_c;
-					e1 += e1->next;
-					sieve[byte2 - start] |= e2->mask;
-					byte2 += e2->delta_f * m2->prime_adj + e2->delta_c;
-					e2 += e2->next;
+					sieve[byte1 - start] |= wheel210[wi1].mask;
+					byte1 += wheel210[wi1].delta_f * p1->prime_adj;
+					byte1 += wheel210[wi1].delta_c;
+					wi1 += wheel210[wi1].next;
+					sieve[byte2 - start] |= wheel210[wi2].mask;
+					byte2 += wheel210[wi2].delta_f * p2->prime_adj;
+					byte2 += wheel210[wi2].delta_c;
+					wi2 += wheel210[wi2].next;
 				}
 				while(byte1 < end)
 				{
-					sieve[byte1 - start] |= e1->mask;
-					byte1 += e1->delta_f * m1->prime_adj + e1->delta_c;
-					e1 += e1->next;
+					sieve[byte1 - start] |= wheel210[wi1].mask;
+					byte1 += wheel210[wi1].delta_f * p1->prime_adj;
+					byte1 += wheel210[wi1].delta_c;
+					wi1 += wheel210[wi1].next;
 				}
 				while(byte2 < end)
 				{
-					sieve[byte2 - start] |= e2->mask;
-					byte2 += e2->delta_f * m2->prime_adj + e2->delta_c;
-					e2 += e2->next;
+					sieve[byte2 - start] |= wheel210[wi2].mask;
+					byte2 += wheel210[wi2].delta_f * p2->prime_adj;
+					byte2 += wheel210[wi2].delta_c;
+					wi2 += wheel210[wi2].next;
 				}
-				m1->next_byte = byte1;
-				m1->stored_e  = e1;
-				m2->next_byte = byte2;
-				m2->stored_e  = e2;
+				p1->next_byte = byte1;
+				p1->wheel_idx = wi1;
+				p2->next_byte = byte2;
+				p2->wheel_idx = wi2;
 
 				/* Advance by one extra */
-				multiples = multiples->next;
+				primes = primes->next;
 			}
 			else
 			{
-				unsigned long byte    = multiples->next_byte;
-				struct wheel_elem * e = multiples->stored_e;
+				unsigned long byte     = primes->next_byte;
+				unsigned int wheel_idx = primes->wheel_idx;
 				while(byte < end)
 				{
-					sieve[byte - start] |= e->mask;
-					byte += e->delta_f * multiples->prime_adj + e->delta_c;
-					e += e->next;
+					sieve[byte - start] |= wheel210[wheel_idx].mask;
+					byte += wheel210[wheel_idx].delta_f * primes->prime_adj;
+					byte += wheel210[wheel_idx].delta_c;
+					wheel_idx += wheel210[wheel_idx].next;
 				}
-				multiples->next_byte = byte;
-				multiples->stored_e  = e;
+				primes->next_byte = byte;
+				primes->wheel_idx = wheel_idx;
 			}
 		}
-		multiples = multiples->next;
+		primes = primes->next;
 	}
 
 	/* Count primes */

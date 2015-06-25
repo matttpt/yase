@@ -86,17 +86,18 @@ void popcnt_init(void);
  * Sieves                                                             *
 \**********************************************************************/
 
-/* Structure to hold information about a multiple of a sieving prime */
-struct multiple
+/* Structure to hold information about a sieving prime, and which
+   multiple needs to be marked next */
+struct prime
 {
-	unsigned long       next_byte; /* Next byte to mark     */
-	unsigned long       prime_adj; /* Prime divided by 30   */
-	struct wheel_elem * stored_e;  /* Next wheel_elem       */
-	struct multiple *   next;      /* Next multiple in list */
+	unsigned long  next_byte; /* Next byte to mark                */
+	unsigned long  prime_adj; /* Prime divided by 30              */
+	struct prime * next;      /* Next sieving prime in list       */
+	unsigned int   wheel_idx; /* Current index in the wheel table */
 };
 
 /* Finds the sieving primes */
-struct multiple * sieve_seed(
+struct prime * sieve_seed(
 		unsigned long max,
 		unsigned long * count,
 		unsigned long * next_byte);
@@ -104,7 +105,7 @@ void sieve_segment(
 		unsigned long start,
 		unsigned long end,
 		unsigned long end_bit,
-		struct multiple * multiples,
+		struct prime * primes,
 		unsigned long * count);
 
 /**********************************************************************\

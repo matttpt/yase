@@ -54,7 +54,7 @@ int main(int argc, char * argv[])
 	unsigned int percent;
 	double start, elapsed;
 	char * strtoul_end;
-	struct multiple * multiples;
+	struct prime * seed_primes;
 
 	/* Validate arguments */
 	if(argc != 2)
@@ -115,7 +115,7 @@ int main(int argc, char * argv[])
 
 	/* Run the sieve for seeds */
 	puts("Finding sieving primes . . .");
-	multiples = sieve_seed(max, &count, &next_byte);
+	seed_primes = sieve_seed(max, &count, &next_byte);
 
 	/*
 	 * Calculate the end byte (the first byte that is not touched).
@@ -162,7 +162,7 @@ int main(int argc, char * argv[])
 		sieve_segment(next_byte,
 		              seg_end_byte,
 		              seg_end_bit,
-		              multiples,
+		              seed_primes,
 		              &count);
 
 		/* Move forward */
@@ -179,12 +179,12 @@ int main(int argc, char * argv[])
 	}
 	putchar('\n');
 
-	/* Free each multiple */
+	/* Free each seed prime */
 	puts("Cleaning up . . .");
-	while(multiples != NULL)
+	while(seed_primes != NULL)
 	{
-		struct multiple * to_free = multiples;
-		multiples = multiples->next;
+		struct prime * to_free = seed_primes;
+		seed_primes = seed_primes->next;
 		free(to_free);
 	}
 
