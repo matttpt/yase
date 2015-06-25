@@ -58,30 +58,32 @@ void sieve_segment(
 				struct prime * p2   = primes->next;
 				unsigned long byte1 = p1->next_byte;
 				unsigned long byte2 = p2->next_byte;
+				unsigned long adj1  = p1->prime_adj;
+				unsigned long adj2  = p2->prime_adj;
 				unsigned int wi1    = p1->wheel_idx;
 				unsigned int wi2    = p2->wheel_idx;
 				while(byte1 < end && byte2 < end)
 				{
 					sieve[byte1 - start] |= wheel210[wi1].mask;
-					byte1 += wheel210[wi1].delta_f * p1->prime_adj;
+					byte1 += wheel210[wi1].delta_f * adj1;
 					byte1 += wheel210[wi1].delta_c;
 					wi1 += wheel210[wi1].next;
 					sieve[byte2 - start] |= wheel210[wi2].mask;
-					byte2 += wheel210[wi2].delta_f * p2->prime_adj;
+					byte2 += wheel210[wi2].delta_f * adj2;
 					byte2 += wheel210[wi2].delta_c;
 					wi2 += wheel210[wi2].next;
 				}
 				while(byte1 < end)
 				{
 					sieve[byte1 - start] |= wheel210[wi1].mask;
-					byte1 += wheel210[wi1].delta_f * p1->prime_adj;
+					byte1 += wheel210[wi1].delta_f * adj1;
 					byte1 += wheel210[wi1].delta_c;
 					wi1 += wheel210[wi1].next;
 				}
 				while(byte2 < end)
 				{
 					sieve[byte2 - start] |= wheel210[wi2].mask;
-					byte2 += wheel210[wi2].delta_f * p2->prime_adj;
+					byte2 += wheel210[wi2].delta_f * adj2;
 					byte2 += wheel210[wi2].delta_c;
 					wi2 += wheel210[wi2].next;
 				}
@@ -96,11 +98,12 @@ void sieve_segment(
 			else
 			{
 				unsigned long byte     = primes->next_byte;
+				unsigned long adj      = primes->prime_adj;
 				unsigned int wheel_idx = primes->wheel_idx;
 				while(byte < end)
 				{
 					sieve[byte - start] |= wheel210[wheel_idx].mask;
-					byte += wheel210[wheel_idx].delta_f * primes->prime_adj;
+					byte += wheel210[wheel_idx].delta_f * adj;
 					byte += wheel210[wheel_idx].delta_c;
 					wheel_idx += wheel210[wheel_idx].next;
 				}
