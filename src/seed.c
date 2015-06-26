@@ -30,13 +30,16 @@
 #include <yase.h>
 
 /* Sieves for the sieving primes */
-struct prime * sieve_seed(
+void sieve_seed(
 		unsigned long max,
 		unsigned long * count,
-		unsigned long * next_byte)
+		unsigned long * next_byte,
+		struct prime ** small_primes_out,
+		struct prime ** large_primes_out)
 {
 	unsigned long i, max_seed, final_byte, final_bit;
-	struct prime * primes = NULL;
+	struct prime * small_primes = NULL;
+	struct prime * large_primes = NULL;
 	unsigned char * seed_sieve;
 
 	/* This is the largest value such that value * value <= max.
@@ -85,13 +88,34 @@ struct prime * sieve_seed(
 			mult      = prime * prime;
 			prime_adj = prime / 30;
 			byte      = mult / 30;
-			wheel_idx = (i % 8) * 48 + wheel210_last_idx[prime % 210];
-			while(byte <= final_byte)
+
+			/*
+			 * If the prime is under the "small threshold," its
+			 * multiples are marked with a mod 30 wheel and the prime is
+			 * placed in the small_primes list.  Otherwise, it is sieved
+			 * with a mod 210 wheel and placed in the large_primes list.
+			 */
+			if(prime_adj < SMALL_THRESHOLD)
 			{
-				seed_sieve[byte] |= wheel210[wheel_idx].mask;
-				byte += wheel210[wheel_idx].delta_f * prime_adj;
-			  	byte += wheel210[wheel_idx].delta_c;
-				wheel_idx += wheel210[wheel_idx].next;
+				wheel_idx = (i % 8) * 9;
+				while(byte <= final_byte)
+				{
+					seed_sieve[byte] |= wheel30[wheel_idx].mask;
+					byte += wheel30[wheel_idx].delta_f * prime_adj;
+					byte += wheel30[wheel_idx].delta_c;
+					wheel_idx += wheel30[wheel_idx].next;
+				}
+			}
+			else
+			{
+				wheel_idx = (i % 8) * 48 + wheel210_last_idx[prime % 210];
+				while(byte <= final_byte)
+				{
+					seed_sieve[byte] |= wheel210[wheel_idx].mask;
+					byte += wheel210[wheel_idx].delta_f * prime_adj;
+					byte += wheel210[wheel_idx].delta_c;
+					wheel_idx += wheel210[wheel_idx].next;
+				}
 			}
 
 			/* If this prime is in the range that we need sieving primes,
@@ -109,13 +133,22 @@ struct prime * sieve_seed(
 				prime_s->next_byte = byte;
 				prime_s->prime_adj = prime_adj;
 				prime_s->wheel_idx = wheel_idx;
-				prime_s->next = primes;
-				primes = prime_s;
+				if(prime_adj < SMALL_THRESHOLD)
+				{
+					prime_s->next = small_primes;
+					small_primes = prime_s;
+				}
+				else
+				{
+					prime_s->next = large_primes;
+					large_primes = prime_s;
+				}
 			}
 		}
 	}
 
-	/* Clean up and return the list of multiples */
+	/* Clean up and write pointers to lists */
 	free(seed_sieve);
-	return primes;
+	*small_primes_out = small_primes;
+	*large_primes_out = large_primes;
 }

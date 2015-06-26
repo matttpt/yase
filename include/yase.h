@@ -39,6 +39,15 @@
 #define WHEEL_PRIMES_SKIPPED (4U)
 
 /*
+ * Threshold below which to use the small prime sieve.  (This has
+ * pretty much been determined experimentally.)  The threshold is
+ * expressed in terms of the adjusted prime value (prime / 30).  Primes
+ * with the adjusted value < SMALL_THRESHOLD will be sieved with the
+ * small prime sieve.
+ */
+#define SMALL_THRESHOLD (SEGMENT_BYTES / 64)
+
+/*
  * This is based HEAVILY off the way that the "primesieve" program
  * implements wheel factorization.  However, I have derived the
  * mathematics to generate the tables myself.
@@ -97,15 +106,18 @@ struct prime
 };
 
 /* Finds the sieving primes */
-struct prime * sieve_seed(
+void sieve_seed(
 		unsigned long max,
 		unsigned long * count,
-		unsigned long * next_byte);
+		unsigned long * next_byte,
+		struct prime ** small_primes_out,
+		struct prime ** large_primes_out);
 void sieve_segment(
 		unsigned long start,
 		unsigned long end,
 		unsigned long end_bit,
-		struct prime * primes,
+		struct prime * small_primes,
+		struct prime * large_primes,
 		unsigned long * count);
 
 /**********************************************************************\
