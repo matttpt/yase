@@ -165,73 +165,87 @@ static inline void process_large_primes(
 		unsigned long end,
 		struct prime * primes)
 {
-	/* Mark multiples of each large sieving prime */
-	while(primes != NULL)
-	{
-		if(primes->next_byte < end)
-		{
-			/* Attempt to do two at a time to leverage ILP.  This is
-			   taken from primesieve. */
-			if(primes->next != NULL && primes->next->next_byte < end)
-			{
-				struct prime * p1   = primes;
-				struct prime * p2   = primes->next;
-				unsigned long byte1 = p1->next_byte;
-				unsigned long byte2 = p2->next_byte;
-				unsigned long adj1  = p1->prime_adj;
-				unsigned long adj2  = p2->prime_adj;
-				unsigned int wi1    = p1->wheel_idx;
-				unsigned int wi2    = p2->wheel_idx;
-				while(byte1 < end && byte2 < end)
-				{
-					sieve[byte1 - start] |= wheel210[wi1].mask;
-					byte1 += wheel210[wi1].delta_f * adj1;
-					byte1 += wheel210[wi1].delta_c;
-					wi1 += wheel210[wi1].next;
-					sieve[byte2 - start] |= wheel210[wi2].mask;
-					byte2 += wheel210[wi2].delta_f * adj2;
-					byte2 += wheel210[wi2].delta_c;
-					wi2 += wheel210[wi2].next;
-				}
-				while(byte1 < end)
-				{
-					sieve[byte1 - start] |= wheel210[wi1].mask;
-					byte1 += wheel210[wi1].delta_f * adj1;
-					byte1 += wheel210[wi1].delta_c;
-					wi1 += wheel210[wi1].next;
-				}
-				while(byte2 < end)
-				{
-					sieve[byte2 - start] |= wheel210[wi2].mask;
-					byte2 += wheel210[wi2].delta_f * adj2;
-					byte2 += wheel210[wi2].delta_c;
-					wi2 += wheel210[wi2].next;
-				}
-				p1->next_byte = byte1;
-				p1->wheel_idx = wi1;
-				p2->next_byte = byte2;
-				p2->wheel_idx = wi2;
+	struct prime * p1, * p2;
+	unsigned long byte1, byte2, adj1, adj2;
+	unsigned int wi1, wi2;
 
-				/* Advance by one extra */
-				primes = primes->next;
-			}
-			else
-			{
-				unsigned long byte     = primes->next_byte;
-				unsigned long adj      = primes->prime_adj;
-				unsigned int wheel_idx = primes->wheel_idx;
-				while(byte < end)
-				{
-					sieve[byte - start] |= wheel210[wheel_idx].mask;
-					byte += wheel210[wheel_idx].delta_f * adj;
-					byte += wheel210[wheel_idx].delta_c;
-					wheel_idx += wheel210[wheel_idx].next;
-				}
-				primes->next_byte = byte;
-				primes->wheel_idx = wheel_idx;
-			}
+	/* If there are no large primes, return */
+	if(primes == NULL)
+	{
+		return;
+	}
+
+	/* Mark multiples, attempting to process two primes at once to
+	   leverage ILP.  (This idea is taken from primesieve.) */
+	p1 = primes;
+	p2 = primes->next;
+	while(p1 != NULL && p2 != NULL)
+	{
+		/* Load primes */
+		byte1 = p1->next_byte;
+		adj1  = p1->prime_adj;
+		wi1   = p1->wheel_idx;
+		byte2 = p2->next_byte;
+		adj2  = p2->prime_adj;
+		wi2   = p2->wheel_idx;
+
+		/* For as long as possible, do both together */
+		while(byte1 < end && byte2 < end)
+		{
+			sieve[byte1 - start] |= wheel210[wi1].mask;
+			byte1 += wheel210[wi1].delta_f * adj1;
+			byte1 += wheel210[wi1].delta_c;
+			wi1 += wheel210[wi1].next;
+			sieve[byte2 - start] |= wheel210[wi2].mask;
+			byte2 += wheel210[wi2].delta_f * adj2;
+			byte2 += wheel210[wi2].delta_c;
+			wi2 += wheel210[wi2].next;
 		}
-		primes = primes->next;
+
+		/* Finish first if necessary */
+		while(byte1 < end)
+		{
+			sieve[byte1 - start] |= wheel210[wi1].mask;
+			byte1 += wheel210[wi1].delta_f * adj1;
+			byte1 += wheel210[wi1].delta_c;
+			wi1 += wheel210[wi1].next;
+		}
+
+		/* Finish second if necessary */
+		while(byte2 < end)
+		{
+			sieve[byte2 - start] |= wheel210[wi2].mask;
+			byte2 += wheel210[wi2].delta_f * adj2;
+			byte2 += wheel210[wi2].delta_c;
+			wi2 += wheel210[wi2].next;
+		}
+
+		/* Save new information */
+		p1->next_byte = byte1;
+		p1->wheel_idx = wi1;
+		p2->next_byte = byte2;
+		p2->wheel_idx = wi2;
+
+		/* Fetch two more primes */
+		p1 = p2->next;
+		p2 = (p1 == NULL ? NULL : p1->next);
+	}
+
+	/* If there are an odd number of primes, finish the last one now */
+	if(p1 != NULL)
+	{
+		byte1 = p1->next_byte;
+		adj1  = p1->prime_adj;
+		wi1   = p1->wheel_idx;
+		while(byte1 < end)
+		{
+			sieve[byte1 - start] |= wheel210[wi1].mask;
+			byte1 += wheel210[wi1].delta_f * adj1;
+			byte1 += wheel210[wi1].delta_c;
+			wi1 += wheel210[wi1].next;
+		}
+		p1->next_byte = byte1;
+		p1->wheel_idx = wi1;
 	}
 }
 
