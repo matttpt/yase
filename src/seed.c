@@ -49,12 +49,21 @@ struct prime * sieve_seed(
 	}
 	max_seed--;
 
-	/* Find the byte of and bit of/before the maximum seed value */
+	/* Find the byte of and bit of/before the maximum seed value.  This
+	   requires a little adjustment if max_seed is divisible by 30.  */
 	final_byte = max_seed / 30;
+	if(max_seed % 30 == 0)
+	{
+		final_byte--;
+		final_bit = final_byte * 8 + 7;
+	}
+	else
+	{
+		final_bit = final_byte * 8 + wheel30_last_idx[max_seed % 30];
+	}
+
+	/* Set the next byte for the caller */
 	*next_byte = final_byte + 1;
-	
-	/* Find the last bit up to which we need sieving primes for */
-	final_bit = final_byte * 8 + wheel30_last_idx[max_seed % 30];
 
 	/* We don't bother to segment for this process.  We allocate the
 	   sieve segment manually. */
