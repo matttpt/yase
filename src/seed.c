@@ -100,10 +100,8 @@ void sieve_seed(
 				wheel_idx = (i % 8) * 9;
 				while(byte <= final_byte)
 				{
-					seed_sieve[byte] |= wheel30[wheel_idx].mask;
-					byte += wheel30[wheel_idx].delta_f * prime_adj;
-					byte += wheel30[wheel_idx].delta_c;
-					wheel_idx += wheel30[wheel_idx].next;
+					mark_multiple_30(seed_sieve, 0UL, prime_adj,
+					                 &byte, &wheel_idx);
 				}
 			}
 			else
@@ -111,10 +109,8 @@ void sieve_seed(
 				wheel_idx = (i % 8) * 48 + wheel210_last_idx[prime % 210];
 				while(byte <= final_byte)
 				{
-					seed_sieve[byte] |= wheel210[wheel_idx].mask;
-					byte += wheel210[wheel_idx].delta_f * prime_adj;
-					byte += wheel210[wheel_idx].delta_c;
-					wheel_idx += wheel210[wheel_idx].next;
+					mark_multiple_210(seed_sieve, 0UL, prime_adj,
+					                  &byte, &wheel_idx);
 				}
 			}
 

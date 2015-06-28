@@ -192,32 +192,20 @@ static inline void process_large_primes(
 		/* For as long as possible, do both together */
 		while(byte1 < end && byte2 < end)
 		{
-			sieve[byte1 - start] |= wheel210[wi1].mask;
-			byte1 += wheel210[wi1].delta_f * adj1;
-			byte1 += wheel210[wi1].delta_c;
-			wi1 += wheel210[wi1].next;
-			sieve[byte2 - start] |= wheel210[wi2].mask;
-			byte2 += wheel210[wi2].delta_f * adj2;
-			byte2 += wheel210[wi2].delta_c;
-			wi2 += wheel210[wi2].next;
+			mark_multiple_210(sieve, start, adj1, &byte1, &wi1);
+			mark_multiple_210(sieve, start, adj2, &byte2, &wi2);
 		}
 
 		/* Finish first if necessary */
 		while(byte1 < end)
 		{
-			sieve[byte1 - start] |= wheel210[wi1].mask;
-			byte1 += wheel210[wi1].delta_f * adj1;
-			byte1 += wheel210[wi1].delta_c;
-			wi1 += wheel210[wi1].next;
+			mark_multiple_210(sieve, start, adj1, &byte1, &wi1);
 		}
 
 		/* Finish second if necessary */
 		while(byte2 < end)
 		{
-			sieve[byte2 - start] |= wheel210[wi2].mask;
-			byte2 += wheel210[wi2].delta_f * adj2;
-			byte2 += wheel210[wi2].delta_c;
-			wi2 += wheel210[wi2].next;
+			mark_multiple_210(sieve, start, adj2, &byte2, &wi2);
 		}
 
 		/* Save new information */
@@ -239,10 +227,7 @@ static inline void process_large_primes(
 		wi1   = p1->wheel_idx;
 		while(byte1 < end)
 		{
-			sieve[byte1 - start] |= wheel210[wi1].mask;
-			byte1 += wheel210[wi1].delta_f * adj1;
-			byte1 += wheel210[wi1].delta_c;
-			wi1 += wheel210[wi1].next;
+			mark_multiple_210(sieve, start, adj1, &byte1, &wi1);
 		}
 		p1->next_byte = byte1;
 		p1->wheel_idx = wi1;

@@ -131,4 +131,38 @@ void presieve_copy(
 		unsigned long start,
 		unsigned long end);
 
+/**********************************************************************\
+ * Inline routines                                                    *
+\**********************************************************************/
+
+/* Marks a multiple of a prime and updates wheel values - mod 30
+   version */
+static inline void mark_multiple_30(
+		unsigned char * sieve,
+		unsigned long start,
+		unsigned long prime_adj,
+		unsigned long * byte,
+		unsigned int  * wheel_idx)
+{
+	sieve[*byte - start] |= wheel30[*wheel_idx].mask;
+	*byte += wheel30[*wheel_idx].delta_f * prime_adj;
+	*byte += wheel30[*wheel_idx].delta_c;
+	*wheel_idx += wheel30[*wheel_idx].next;
+}
+
+/* Marks a multiple of a prime and updates wheel values - mod 210
+   version */
+static inline void mark_multiple_210(
+		unsigned char * sieve,
+		unsigned long start,
+		unsigned long prime_adj,
+		unsigned long * byte,
+		unsigned int  * wheel_idx)
+{
+	sieve[*byte - start] |= wheel210[*wheel_idx].mask;
+	*byte += wheel210[*wheel_idx].delta_f * prime_adj;
+	*byte += wheel210[*wheel_idx].delta_c;
+	*wheel_idx += wheel210[*wheel_idx].next;
+}
+
 #endif /* !YASE_H */
