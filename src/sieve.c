@@ -84,39 +84,39 @@ static const unsigned char offs_to_mask[30] =
 
 /* Generates the code to "check and step" through the cycle, making
    sure not to run over the end byte limit */
-#define BUILD_CHECK_AND_MARK(n, df, i, j)        \
-	if(byte >= end - start) {                    \
-		prime->next_byte = byte - (end - start); \
-		prime->wheel_idx = n;                    \
-		return;                                  \
-	}                                            \
-	sieve[byte] |= MASK(i, j);                   \
+#define BUILD_CHECK_AND_MARK(n, df, i, j)                \
+	if(byte >= lim) {                                    \
+		prime->next_byte = (unsigned long) (byte - lim); \
+		prime->wheel_idx = n;                            \
+		return;                                          \
+	}                                                    \
+	*byte |= MASK(i, j);                                 \
 	byte += (adj * df) + DC(df, i, j);
 
 /* Generates the code to handle a cycle of 8. n = the starting wheel
    index, i = the wheel offset associated with the prime/cycle */
-#define BUILD_LOOP(n, i)                                          \
-	for(;;) {                                                     \
-	case n:                                                       \
-		while(byte + adj * 28 + i < end - start) {                \
-			sieve[byte                          ] |= MASK(i,  1); \
-			sieve[byte + adj * 6  + DC( 6, i, 1)] |= MASK(i,  7); \
-			sieve[byte + adj * 10 + DC(10, i, 1)] |= MASK(i, 11); \
-			sieve[byte + adj * 12 + DC(12, i, 1)] |= MASK(i, 13); \
-			sieve[byte + adj * 16 + DC(16, i, 1)] |= MASK(i, 17); \
-			sieve[byte + adj * 18 + DC(18, i, 1)] |= MASK(i, 19); \
-			sieve[byte + adj * 22 + DC(22, i, 1)] |= MASK(i, 23); \
-			sieve[byte + adj * 28 + DC(28, i, 1)] |= MASK(i, 29); \
-			byte += adj * 30 + i;                                 \
-		}                                                         \
-	            BUILD_CHECK_AND_MARK(n    , 6, i,  1)             \
-	case n + 1: BUILD_CHECK_AND_MARK(n + 1, 4, i,  7)             \
-	case n + 2: BUILD_CHECK_AND_MARK(n + 2, 2, i, 11)             \
-	case n + 3: BUILD_CHECK_AND_MARK(n + 3, 4, i, 13)             \
-	case n + 4: BUILD_CHECK_AND_MARK(n + 4, 2, i, 17)             \
-	case n + 5: BUILD_CHECK_AND_MARK(n + 5, 4, i, 19)             \
-	case n + 6: BUILD_CHECK_AND_MARK(n + 6, 6, i, 23)             \
-	case n + 7: BUILD_CHECK_AND_MARK(n + 7, 2, i, 29)             \
+#define BUILD_LOOP(n, i)                                  \
+	for(;;) {                                             \
+	case n:                                               \
+		while(byte < lim - adj * 28 - i) {                \
+			byte[                      0] |= MASK(i,  1); \
+			byte[adj * 6  + DC( 6, i, 1)] |= MASK(i,  7); \
+			byte[adj * 10 + DC(10, i, 1)] |= MASK(i, 11); \
+			byte[adj * 12 + DC(12, i, 1)] |= MASK(i, 13); \
+			byte[adj * 16 + DC(16, i, 1)] |= MASK(i, 17); \
+			byte[adj * 18 + DC(18, i, 1)] |= MASK(i, 19); \
+			byte[adj * 22 + DC(22, i, 1)] |= MASK(i, 23); \
+			byte[adj * 28 + DC(28, i, 1)] |= MASK(i, 29); \
+			byte += adj * 30 + i;                         \
+		}                                                 \
+	            BUILD_CHECK_AND_MARK(n    , 6, i,  1)     \
+	case n + 1: BUILD_CHECK_AND_MARK(n + 1, 4, i,  7)     \
+	case n + 2: BUILD_CHECK_AND_MARK(n + 2, 2, i, 11)     \
+	case n + 3: BUILD_CHECK_AND_MARK(n + 3, 4, i, 13)     \
+	case n + 4: BUILD_CHECK_AND_MARK(n + 4, 2, i, 17)     \
+	case n + 5: BUILD_CHECK_AND_MARK(n + 5, 4, i, 19)     \
+	case n + 6: BUILD_CHECK_AND_MARK(n + 6, 6, i, 23)     \
+	case n + 7: BUILD_CHECK_AND_MARK(n + 7, 2, i, 29)     \
 	}
 
 /* process_small_prime() itself - but all of the real code is in the
@@ -127,8 +127,9 @@ static inline void process_small_prime(
 		struct prime * prime)
 {
 	/* From prime structure */
-	unsigned long byte = prime->next_byte;
-	unsigned long adj  = prime->prime_adj;
+	unsigned char * byte = &sieve[prime->next_byte];
+	unsigned char * lim  = &sieve[end - start];
+	unsigned long adj    = prime->prime_adj;
 
 	/* Jump to the correct spot */
 	switch(prime->wheel_idx)
