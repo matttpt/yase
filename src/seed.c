@@ -29,39 +29,24 @@
 #include <string.h>
 #include <yase.h>
 
-/* Sieves for the sieving primes */
+/*
+ * Sieves for the sieving primes.  end_byte is the first byte not
+ * to check; end_bit is the first bit for which we don't need sieving
+ * primes.  The long integer pointed to by count is increased with every
+ * prime found.  Sieving primes found are added to the prime set given.
+ */
 void sieve_seed(
-		unsigned long max,
+		unsigned long end_byte,
+		unsigned long end_bit,
 		unsigned long * count,
-		unsigned long * next_byte,
-		struct prime ** small_primes_out,
-		struct prime ** large_primes_out)
+		struct prime_set * set)
 {
-	unsigned long i, max_seed, final_byte, final_bit;
-	struct prime * small_primes = NULL;
-	struct prime * large_primes = NULL;
+	unsigned long i;
 	unsigned char * seed_sieve;
-
-	/* This is the largest value such that value * value <= max.
-	   To avoid floating-point arithmetic we just increase the value
-	   until the condition is no longer met. */
-	max_seed = 0;
-	while(max_seed * max_seed <= max)
-	{
-		max_seed++;
-	}
-	max_seed--;
-
-	/* Find the byte of and bit of/before the maximum seed value */
-	final_byte = max_seed / 30;
-	*next_byte = final_byte + 1;
 	
-	/* Find the last bit up to which we need sieving primes for */
-	final_bit = final_byte * 8 + wheel30_last_idx[max_seed % 30];
-
 	/* We don't bother to segment for this process.  We allocate the
 	   sieve segment manually. */
-	seed_sieve = malloc(final_byte + 1);
+	seed_sieve = malloc(end_byte);
 	if(seed_sieve == NULL)
 	{
 		perror("malloc");
@@ -69,16 +54,16 @@ void sieve_seed(
 	}
 
 	/* Copy in pre-sieve data */
-	presieve_copy(seed_sieve, 0, final_byte + 1);
+	presieve_copy(seed_sieve, 0, end_byte);
 
 	/* Run the sieve */
-	for(i = PRESIEVE_PRIMES + 2; i < (final_byte + 1) * 8; i++)
+	for(i = PRESIEVE_PRIMES + 2; i < end_byte * 8; i++)
 	{
 		if((seed_sieve[i / 8] & ((unsigned char) 1U << (i % 8))) == 0)
 		{
 			unsigned long prime, mult, prime_adj, byte;
 			unsigned int wheel_idx;
-			struct prime * prime_s;
+			struct prime prime_s;
 
 			/* Count the prime */
 			(*count)++;
@@ -89,62 +74,43 @@ void sieve_seed(
 			prime_adj = prime / 30;
 			byte      = mult / 30;
 
-			/*
-			 * If the prime is under the "small threshold," its
-			 * multiples are marked with a mod 30 wheel and the prime is
-			 * placed in the small_primes list.  Otherwise, it is sieved
-			 * with a mod 210 wheel and placed in the large_primes list.
-			 */
+			/* If the prime is under the "small threshold," its
+			   multiples are marked with a mod 30 wheel.  Otherwise, it
+			   is sieved with a mod 210 wheel. */
 			if(prime_adj < SMALL_THRESHOLD)
 			{
 				wheel_idx = (i % 8) * 9;
-				while(byte <= final_byte)
+				while(byte < end_byte)
 				{
-					mark_multiple_30(seed_sieve, 0UL, prime_adj,
-					                 &byte, &wheel_idx);
+					mark_multiple_30(seed_sieve, prime_adj, &byte,
+					                 &wheel_idx);
 				}
 			}
 			else
 			{
 				wheel_idx = (i % 8) * 48 + wheel210_last_idx[prime % 210];
-				while(byte <= final_byte)
+				while(byte < end_byte)
 				{
-					mark_multiple_210(seed_sieve, 0UL, prime_adj,
-					                  &byte, &wheel_idx);
+					mark_multiple_210(seed_sieve, prime_adj, &byte,
+					                  &wheel_idx);
 				}
 			}
 
 			/* If this prime is in the range that we need sieving primes,
 			   record it. */
-			if(i <= final_bit)
+			if(i < end_bit)
 			{
-				/* Allocate new sieving prime structure */
-				prime_s = malloc(sizeof(struct prime));
-				if(prime_s == NULL)
-				{
-					perror("malloc");
-					free(seed_sieve);
-					abort();
-				}
-				prime_s->next_byte = byte;
-				prime_s->prime_adj = prime_adj;
-				prime_s->wheel_idx = wheel_idx;
-				if(prime_adj < SMALL_THRESHOLD)
-				{
-					prime_s->next = small_primes;
-					small_primes = prime_s;
-				}
-				else
-				{
-					prime_s->next = large_primes;
-					large_primes = prime_s;
-				}
+				/* Setup the sieving prime structure */
+				prime_s.next_byte = byte;
+				prime_s.prime_adj = prime_adj;
+				prime_s.wheel_idx = wheel_idx;
+
+				/* Submit to the prime set */
+				prime_set_add(set, &prime_s);
 			}
 		}
 	}
 
-	/* Clean up and write pointers to lists */
+	/* Clean up */
 	free(seed_sieve);
-	*small_primes_out = small_primes;
-	*large_primes_out = large_primes;
 }

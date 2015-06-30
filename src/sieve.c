@@ -84,13 +84,13 @@ static const unsigned char offs_to_mask[30] =
 
 /* Generates the code to "check and step" through the cycle, making
    sure not to run over the end byte limit */
-#define BUILD_CHECK_AND_MARK(n, df, i, j) \
-	if(byte >= end - start) {             \
-		prime->next_byte = byte + start;  \
-		prime->wheel_idx = n;             \
-		return;                           \
-	}                                     \
-	sieve[byte] |= MASK(i, j);            \
+#define BUILD_CHECK_AND_MARK(n, df, i, j)        \
+	if(byte >= end - start) {                    \
+		prime->next_byte = byte - (end - start); \
+		prime->wheel_idx = n;                    \
+		return;                                  \
+	}                                            \
+	sieve[byte] |= MASK(i, j);                   \
 	byte += (adj * df) + DC(df, i, j);
 
 /* Generates the code to handle a cycle of 8. n = the starting wheel
@@ -127,7 +127,7 @@ static inline void process_small_prime(
 		struct prime * prime)
 {
 	/* From prime structure */
-	unsigned long byte = prime->next_byte - start;
+	unsigned long byte = prime->next_byte;
 	unsigned long adj  = prime->prime_adj;
 
 	/* Jump to the correct spot */
@@ -149,8 +149,9 @@ static inline void process_small_prime(
 static inline void process_small_primes(
 		unsigned long start,
 		unsigned long end,
-		struct prime * primes)
+		struct prime_set * set)
 {
+	struct prime * primes = prime_set_small(set);
 	while(primes != NULL)
 	{
 		process_small_prime(start, end, primes);
@@ -163,17 +164,23 @@ static inline void process_small_primes(
 static inline void process_large_primes(
 		unsigned long start,
 		unsigned long end,
-		struct prime * primes)
+		struct prime_set * set)
 {
-	struct prime * p1, * p2;
-	unsigned long byte1, byte2, adj1, adj2;
+	struct prime * primes, * p1, * p2, * save_p1, * save_p2;
+	unsigned long byte1, byte2, adj1, adj2, lim;
 	unsigned int wi1, wi2;
+
+	/* Fetch the list we need */
+	primes = prime_set_current(set);
 
 	/* If there are no large primes, return */
 	if(primes == NULL)
 	{
 		return;
 	}
+
+	/* Find the sieve byte limit */
+	lim = end - start;
 
 	/* Mark multiples, attempting to process two primes at once to
 	   leverage ILP.  (This idea is taken from primesieve.) */
@@ -190,33 +197,35 @@ static inline void process_large_primes(
 		wi2   = p2->wheel_idx;
 
 		/* For as long as possible, do both together */
-		while(byte1 < end && byte2 < end)
+		while(byte1 < lim && byte2 < lim)
 		{
-			mark_multiple_210(sieve, start, adj1, &byte1, &wi1);
-			mark_multiple_210(sieve, start, adj2, &byte2, &wi2);
+			mark_multiple_210(sieve, adj1, &byte1, &wi1);
+			mark_multiple_210(sieve, adj2, &byte2, &wi2);
 		}
 
 		/* Finish first if necessary */
-		while(byte1 < end)
+		while(byte1 < lim)
 		{
-			mark_multiple_210(sieve, start, adj1, &byte1, &wi1);
+			mark_multiple_210(sieve, adj1, &byte1, &wi1);
 		}
 
 		/* Finish second if necessary */
-		while(byte2 < end)
+		while(byte2 < lim)
 		{
-			mark_multiple_210(sieve, start, adj2, &byte2, &wi2);
+			mark_multiple_210(sieve, adj2, &byte2, &wi2);
 		}
 
-		/* Save new information */
-		p1->next_byte = byte1;
-		p1->wheel_idx = wi1;
-		p2->next_byte = byte2;
-		p2->wheel_idx = wi2;
+		/* Remember old two primes */
+		save_p1 = p1;
+		save_p2 = p2;
 
 		/* Fetch two more primes */
 		p1 = p2->next;
 		p2 = (p1 == NULL ? NULL : p1->next);
+
+		/* Save old two back to the set */
+		prime_set_save(set, save_p1, byte1, wi1);
+		prime_set_save(set, save_p2, byte2, wi2);
 	}
 
 	/* If there are an odd number of primes, finish the last one now */
@@ -225,12 +234,11 @@ static inline void process_large_primes(
 		byte1 = p1->next_byte;
 		adj1  = p1->prime_adj;
 		wi1   = p1->wheel_idx;
-		while(byte1 < end)
+		while(byte1 < lim)
 		{
-			mark_multiple_210(sieve, start, adj1, &byte1, &wi1);
+			mark_multiple_210(sieve, adj1, &byte1, &wi1);
 		}
-		p1->next_byte = byte1;
-		p1->wheel_idx = wi1;
+		prime_set_save(set, p1, byte1, wi1);
 	}
 }
 
@@ -241,8 +249,7 @@ void sieve_segment(
 		unsigned long start,
 		unsigned long end,
 		unsigned long end_bit,
-		struct prime * small_primes,
-		struct prime * large_primes,
+		struct prime_set * set,
 		unsigned long * count)
 {
 	unsigned long i;
@@ -251,8 +258,8 @@ void sieve_segment(
 	presieve_copy(sieve, start, end);
 
 	/* Mark multiples of each sieving prime */
-	process_small_primes(start, end, small_primes);
-	process_large_primes(start, end, large_primes);
+	process_small_primes(start, end, set);
+	process_large_primes(start, end, set);
 
 	/* Count primes */
 	for(i = 0; i < end - start; i++)

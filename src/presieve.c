@@ -74,7 +74,7 @@ void presieve_init(void)
 	wheel_idx = 8;
 	while(byte < len)
 	{
-		mark_multiple_30(presieve, 0UL, 0UL, &byte, &wheel_idx);
+		mark_multiple_30(presieve, 0UL, &byte, &wheel_idx);
 	}
 
 	/* Run pre-sieve */
@@ -87,8 +87,7 @@ void presieve_init(void)
 		wheel_idx = (i + 2) * 48;
 		while(byte < len)
 		{
-			mark_multiple_210(presieve, 0UL, prime_adj,
-			                  &byte, &wheel_idx);
+			mark_multiple_210(presieve, prime_adj, &byte, &wheel_idx);
 		}
 	}
 }

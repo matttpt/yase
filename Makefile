@@ -16,6 +16,7 @@ SOURCES=           \
 	src/popcnt.c   \
 	src/presieve.c \
 	src/seed.c     \
+	src/set.c      \
 	src/sieve.c    \
 	src/wheel.c
 
