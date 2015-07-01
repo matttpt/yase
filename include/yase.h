@@ -28,6 +28,7 @@
 #define YASE_H
 
 #include <stdlib.h>
+#include <stdio.h>
 
 /* Include the compile parameters and version headers */
 #include <params.h>
@@ -104,10 +105,9 @@ struct prime_set;
    multiple needs to be marked next */
 struct prime
 {
-	unsigned long  next_byte; /* Next byte to mark                */
-	unsigned long  prime_adj; /* Prime divided by 30              */
-	struct prime * next;      /* Next sieving prime in list       */
-	unsigned int   wheel_idx; /* Current index in the wheel table */
+	unsigned long next_byte; /* Next byte to mark                */
+	unsigned long prime_adj; /* Prime divided by 30              */
+	unsigned int  wheel_idx; /* Current index in the wheel table */
 };
 
 /* Finds the sieving primes */
@@ -137,19 +137,34 @@ void presieve_copy(
 		unsigned long end);
 
 /**********************************************************************\
- * Bucket sorting of primes                                           *
+ * Storage of sieving primes                                          *
 \**********************************************************************/
 
-/* Buckets structure */
+/* Number of primes to fit in a bucket */
+#define BUCKET_PRIMES (1024)
+
+/* Bucket structure - contains a bunch of sieving primes at once */
+struct bucket
+{
+	unsigned long count;  /* Number of primes stored in the bucket */
+	struct bucket * next; /* Next bucket in the list               */
+	struct prime primes[BUCKET_PRIMES]; /* Prime storage           */
+};
+
+/* Set structure - contains sieving primes stored to sieve a particular
+   interval */
 struct prime_set
 {
-	unsigned long start;
-	unsigned long end;
-	unsigned long end_segment;
-	unsigned long current;
-	struct prime * small;
-	struct prime * finished;
-	struct prime ** lists;
+	unsigned long start;          /* Start byte of the interval      */
+	unsigned long end;            /* End byte of the interval        */
+	unsigned long end_segment;    /* Number of segs. in the interval */
+	unsigned long current;        /* Current segment being sieved    */
+	struct bucket * small;        /* List of small sieving primes    */
+	struct bucket * inactive;     /* List of inactive sieving primes */
+	struct bucket * inactive_end; /* Last node, for fast insertion   */
+	struct bucket * finished;     /* List of finished sieving primes */
+	struct bucket * pool;         /* Pool of unused buckets          */
+	struct bucket ** lists;       /* List for each seg. in interval  */
 };
 
 /* Initializes a set of primes */
@@ -159,7 +174,13 @@ void prime_set_init(
 		unsigned long end);
 
 /* Adds a sieving prime to a prime set */
-void prime_set_add(struct prime_set * set, const struct prime * prime);
+void prime_set_add(struct prime_set * set,
+		unsigned long prime_adj,
+		unsigned long next_byte,
+		unsigned int wheel_idx);
+
+/* Sets up the set/lists to sieve the next segment */
+void prime_set_advance(struct prime_set * set);
 
 /* Frees any memory allocated for the prime set, including the primes it
    contains */
@@ -198,22 +219,92 @@ static inline void mark_multiple_210(
 	*wheel_idx += wheel210[*wheel_idx].next;
 }
 
+/* Adds a prime to a bucket.  Returns false/zero if there's no space,
+   true/nonzero otherwise. */
+static inline int bucket_append(
+		struct bucket * node,
+		unsigned long prime_adj,
+		unsigned long next_byte,
+		unsigned int wheel_idx)
+{
+	unsigned long count = node->count;
+	if(count == BUCKET_PRIMES)
+	{
+		return 0;
+	}
+	node->primes[count].prime_adj = prime_adj;
+	node->primes[count].next_byte = next_byte;
+	node->primes[count].wheel_idx = wheel_idx;
+	node->count++;
+	return 1;
+}
+
+/* Allocates a bucket for a set, drawing on the existing pool if
+   possible */
+static inline struct bucket * prime_set_bucket_init(
+		struct prime_set * set,
+		struct bucket * next)
+{
+	struct bucket * node;
+	if(set->pool == NULL)
+	{
+		/* None left in pool.  Allocate one from scratch. */
+		node = malloc(sizeof(struct bucket));
+		if(node == NULL)
+		{
+			perror("malloc");
+			abort();
+		}
+	}
+	else
+	{
+		/* Use one from the set's pool */
+		node = set->pool;
+		set->pool = node->next;
+	}
+	node->count = 0UL;
+	node->next = next;
+	return node;
+}
+
+/* Inserts a prime into a list */
+static inline void prime_set_list_append(
+		struct prime_set * set,
+		struct bucket ** list,
+		unsigned long prime_adj,
+		unsigned long next_byte,
+		unsigned int wheel_idx)
+{
+	/* If the list is empty of the first bucket is full, allocate a new
+	   bucket.  Otherwise, just add to the first bucket. */
+	if(*list == NULL ||
+	   !bucket_append(*list, prime_adj, next_byte, wheel_idx))
+	{
+		struct bucket * node = prime_set_bucket_init(set, *list);
+		bucket_append(node, prime_adj, next_byte, wheel_idx);
+		*list = node;
+	}
+}
+
+/* Returns a bucket to a pool for later use */
+static inline void prime_set_bucket_return(
+		struct prime_set * set,
+		struct bucket * bucket)
+{
+	bucket->next = set->pool;
+	set->pool = bucket;
+}
+
 /* Returns the small primes stored with a set */
-static inline struct prime * prime_set_small(struct prime_set * set)
+static inline struct bucket * prime_set_small(struct prime_set * set)
 {
 	return set->small;
 }
 
 /* Returns the list of primes needed for the current segment */
-static inline struct prime * prime_set_current(struct prime_set * set)
+static inline struct bucket * prime_set_current(struct prime_set * set)
 {
 	return set->lists[set->current];
-}
-
-/* Advances to the list for the next segment */
-static inline void prime_set_advance(struct prime_set * set)
-{
-	set->lists[set->current++] = NULL;
 }
 
 /* Saves a processed prime into its next list.  This is only used for
@@ -221,14 +312,11 @@ static inline void prime_set_advance(struct prime_set * set)
    small list. */
 static inline void prime_set_save(
 		struct prime_set * set,
-		struct prime * prime,
+		unsigned long prime_adj,
 		unsigned long byte,
 		unsigned int wheel_idx)
 {
-	unsigned long next_seg, next_byte;
-
-	/* Save wheel index */
-	prime->wheel_idx = wheel_idx;
+	unsigned long next_seg;
 
 	/* Figure out the next segment in which this prime will be marked */
 	next_seg = set->current + byte / SEGMENT_BYTES;
@@ -241,20 +329,19 @@ static inline void prime_set_save(
 	 */
 	if(next_seg >= set->end_segment || byte < SEGMENT_BYTES)
 	{
-		/* Calculate next absolute byte */
-		next_byte = byte + set->start + set->current * SEGMENT_BYTES;
+		/* The byte is stored as absolute in the finished list */
+		byte += set->start + set->current * SEGMENT_BYTES;
 
 		/* Prime goes into the finished list */
-		prime->next_byte = next_byte;
-		prime->next = set->finished;
-		set->finished = prime;
+		prime_set_list_append(set, &set->finished, prime_adj, byte,
+		                      wheel_idx);
 	}
 	else
 	{
 		/* Prime goes into a "real" list */
-		prime->next_byte = byte % SEGMENT_BYTES;
-		prime->next = set->lists[next_seg];
-		set->lists[next_seg] = prime;
+		struct bucket ** list = &set->lists[next_seg];
+		byte %= SEGMENT_BYTES;
+		prime_set_list_append(set, list, prime_adj, byte, wheel_idx);
 	}
 }
 

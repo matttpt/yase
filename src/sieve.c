@@ -152,30 +152,33 @@ static inline void process_small_primes(
 		unsigned long end,
 		struct prime_set * set)
 {
-	struct prime * primes = prime_set_small(set);
-	while(primes != NULL)
+	struct bucket * bucket = prime_set_small(set);
+	while(bucket != NULL)
 	{
-		process_small_prime(start, end, primes);
-		primes = primes->next;
+		struct prime * prime = bucket->primes;
+		struct prime * p_end = &bucket->primes[bucket->count];
+		while(prime < p_end)
+		{
+			process_small_prime(start, end, prime);
+			prime++;
+		}
+		bucket = bucket->next;
 	}
 }
 
-/* Processes large sieving primes, marking multiples of two at a time
-   if possible to leverage instruction-level parallelism */
-static inline void process_large_primes(
+/* Processes one bucket of large sieving primes */
+static inline void process_large_prime_bucket(
 		unsigned long start,
 		unsigned long end,
-		struct prime_set * set)
+		struct prime_set * set,
+		struct bucket * bucket)
 {
-	struct prime * primes, * p1, * p2, * save_p1, * save_p2;
+	struct prime * next_prime, * end_prime, * p1, * p2;
 	unsigned long byte1, byte2, adj1, adj2, lim;
 	unsigned int wi1, wi2;
 
-	/* Fetch the list we need */
-	primes = prime_set_current(set);
-
-	/* If there are no large primes, return */
-	if(primes == NULL)
+	/* If there are no large primes in the bucket, return */
+	if(bucket->count == 0)
 	{
 		return;
 	}
@@ -183,10 +186,15 @@ static inline void process_large_primes(
 	/* Find the sieve byte limit */
 	lim = end - start;
 
+	/* Setup next and end primes */
+	next_prime = bucket->primes;
+	end_prime  = &bucket->primes[bucket->count];
+
 	/* Mark multiples, attempting to process two primes at once to
 	   leverage ILP.  (This idea is taken from primesieve.) */
-	p1 = primes;
-	p2 = primes->next;
+	p1 = next_prime;
+	next_prime++;
+	p2 = (next_prime < end_prime ? next_prime++ : NULL);
 	while(p1 != NULL && p2 != NULL)
 	{
 		/* Load primes */
@@ -215,18 +223,14 @@ static inline void process_large_primes(
 		{
 			mark_multiple_210(sieve, adj2, &byte2, &wi2);
 		}
-
-		/* Remember old two primes */
-		save_p1 = p1;
-		save_p2 = p2;
+		
+		/* Save old two back to the set */
+		prime_set_save(set, adj1, byte1, wi1);
+		prime_set_save(set, adj2, byte2, wi2);
 
 		/* Fetch two more primes */
-		p1 = p2->next;
-		p2 = (p1 == NULL ? NULL : p1->next);
-
-		/* Save old two back to the set */
-		prime_set_save(set, save_p1, byte1, wi1);
-		prime_set_save(set, save_p2, byte2, wi2);
+		p1 = (next_prime < end_prime ? next_prime++ : NULL);
+		p2 = (next_prime < end_prime ? next_prime++ : NULL);
 	}
 
 	/* If there are an odd number of primes, finish the last one now */
@@ -239,7 +243,29 @@ static inline void process_large_primes(
 		{
 			mark_multiple_210(sieve, adj1, &byte1, &wi1);
 		}
-		prime_set_save(set, p1, byte1, wi1);
+		prime_set_save(set, adj1, byte1, wi1);
+	}
+}
+
+/* Processes large sieving primes, marking multiples of two at a time
+   if possible to leverage instruction-level parallelism */
+static inline void process_large_primes(
+		unsigned long start,
+		unsigned long end,
+		struct prime_set * set)
+{
+	struct bucket * bucket, * to_return;
+
+	/* Fetch the list we need */
+	bucket = prime_set_current(set);
+
+	/* Process each bucket */
+	while(bucket != NULL)
+	{
+		process_large_prime_bucket(start, end, set, bucket);
+		to_return = bucket;
+		bucket    = bucket->next;
+		prime_set_bucket_return(set, to_return);
 	}
 }
 

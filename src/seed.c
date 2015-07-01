@@ -63,7 +63,6 @@ void sieve_seed(
 		{
 			unsigned long prime, mult, prime_adj, byte;
 			unsigned int wheel_idx;
-			struct prime prime_s;
 
 			/* Count the prime */
 			(*count)++;
@@ -100,13 +99,8 @@ void sieve_seed(
 			   record it. */
 			if(i < end_bit)
 			{
-				/* Setup the sieving prime structure */
-				prime_s.next_byte = byte;
-				prime_s.prime_adj = prime_adj;
-				prime_s.wheel_idx = wheel_idx;
-
 				/* Submit to the prime set */
-				prime_set_add(set, &prime_s);
+				prime_set_add(set, prime_adj, byte, wheel_idx);
 			}
 		}
 	}
