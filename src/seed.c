@@ -76,7 +76,7 @@ void sieve_seed(
 			/* If the prime is under the "small threshold," its
 			   multiples are marked with a mod 30 wheel.  Otherwise, it
 			   is sieved with a mod 210 wheel. */
-			if(prime_adj < SMALL_THRESHOLD)
+			if(prime < SMALL_THRESHOLD)
 			{
 				wheel_idx = (i % 8) * 9;
 				while(byte < end_byte)
@@ -100,7 +100,7 @@ void sieve_seed(
 			if(i < end_bit)
 			{
 				/* Submit to the prime set */
-				prime_set_add(set, prime_adj, byte, wheel_idx);
+				prime_set_add(set, prime, byte, wheel_idx);
 			}
 		}
 	}

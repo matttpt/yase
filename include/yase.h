@@ -42,13 +42,13 @@
 #define WHEEL_PRIMES_SKIPPED (4U)
 
 /*
- * Threshold below which to use the small prime sieve.  (This has
- * pretty much been determined experimentally.)  The threshold is
- * expressed in terms of the adjusted prime value (prime / 30).  Primes
- * with the adjusted value < SMALL_THRESHOLD will be sieved with the
- * small prime sieve.
+ * Threshold below which to use the small prime sieve.  Primes smaller
+ * than SMALL_THRESHOLD will be sieved with the small prime sieve, which
+ * is much faster for primes with many multiples per segment.  This
+ * is configured by SMALL_THRESHOLD_FACTOR in config.mk.
  */
-#define SMALL_THRESHOLD (SEGMENT_BYTES / 64)
+#define SMALL_THRESHOLD \
+	((unsigned long) (SEGMENT_BYTES * SMALL_THRESHOLD_FACTOR))
 
 /*
  * This is based HEAVILY off the way that the "primesieve" program
@@ -140,9 +140,6 @@ void presieve_copy(
  * Storage of sieving primes                                          *
 \**********************************************************************/
 
-/* Number of primes to fit in a bucket */
-#define BUCKET_PRIMES (1024)
-
 /* Bucket structure - contains a bunch of sieving primes at once */
 struct bucket
 {
@@ -175,7 +172,7 @@ void prime_set_init(
 
 /* Adds a sieving prime to a prime set */
 void prime_set_add(struct prime_set * set,
-		unsigned long prime_adj,
+		unsigned long prime,
 		unsigned long next_byte,
 		unsigned int wheel_idx);
 

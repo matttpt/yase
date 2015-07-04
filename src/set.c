@@ -98,10 +98,12 @@ void prime_set_init(
    sieve_seed(), and there are some important pre-conditions for its use.
    See the notes above for information. */
 void prime_set_add(struct prime_set * set,
-		unsigned long prime_adj,
+		unsigned long prime,
 		unsigned long next_byte,
 		unsigned int wheel_idx)
 {
+	unsigned long prime_adj = prime / 30;
+
 	/* Put the prime into the interval if necessary */
 	if(next_byte < set->start)
 	{
@@ -111,7 +113,7 @@ void prime_set_add(struct prime_set * set,
 	}
 
 	/* Add prime to appropriate list */
-	if(prime_adj < SMALL_THRESHOLD)
+	if(prime < SMALL_THRESHOLD)
 	{
 		next_byte -= set->start;
 		prime_set_list_append(set, &set->small, prime_adj, next_byte,
