@@ -27,6 +27,9 @@
 #ifndef YASE_H
 #define YASE_H
 
+#include <stdlib.h>
+#include <stdio.h>
+
 /* Include the compile parameters and version headers */
 #include <params.h>
 #include <version.h>
@@ -37,6 +40,15 @@
 
 /* Number of primes skipped by the primary sieving wheel (mod 210) */
 #define WHEEL_PRIMES_SKIPPED (4U)
+
+/*
+ * Threshold below which to use the small prime sieve.  Primes smaller
+ * than SMALL_THRESHOLD will be sieved with the small prime sieve, which
+ * is much faster for primes with many multiples per segment.  This
+ * is configured by SMALL_THRESHOLD_FACTOR in config.mk.
+ */
+#define SMALL_THRESHOLD \
+	((unsigned long) (SEGMENT_BYTES * SMALL_THRESHOLD_FACTOR))
 
 /*
  * This is based HEAVILY off the way that the "primesieve" program
@@ -86,26 +98,31 @@ void popcnt_init(void);
  * Sieves                                                             *
 \**********************************************************************/
 
+/* We need to declare this for sieve_seed() and sieve_segment() */
+struct prime_set;
+
 /* Structure to hold information about a sieving prime, and which
    multiple needs to be marked next */
 struct prime
 {
-	unsigned long  next_byte; /* Next byte to mark                */
-	unsigned long  prime_adj; /* Prime divided by 30              */
-	struct prime * next;      /* Next sieving prime in list       */
-	unsigned int   wheel_idx; /* Current index in the wheel table */
+	unsigned long next_byte; /* Next byte to mark                */
+	unsigned long prime_adj; /* Prime divided by 30              */
+	unsigned int  wheel_idx; /* Current index in the wheel table */
 };
 
 /* Finds the sieving primes */
-struct prime * sieve_seed(
-		unsigned long max,
+void sieve_seed(
+		unsigned long end_byte,
+		unsigned long end_bit,
 		unsigned long * count,
-		unsigned long * next_byte);
+		struct prime_set * set);
+
+/* Sieves a segment */
 void sieve_segment(
 		unsigned long start,
 		unsigned long end,
 		unsigned long end_bit,
-		struct prime * primes,
+		struct prime_set * set,
 		unsigned long * count);
 
 /**********************************************************************\
@@ -138,5 +155,211 @@ enum args_action process_args(
 		int argc,
 		char * argv[],
 		unsigned long * max);
+
+/**********************************************************************\
+ * Storage of sieving primes                                          *
+\**********************************************************************/
+
+/* Bucket structure - contains a bunch of sieving primes at once */
+struct bucket
+{
+	unsigned long count;  /* Number of primes stored in the bucket */
+	struct bucket * next; /* Next bucket in the list               */
+	struct prime primes[BUCKET_PRIMES]; /* Prime storage           */
+};
+
+/* Set structure - contains sieving primes stored to sieve a particular
+   interval */
+struct prime_set
+{
+	unsigned long start;          /* Start byte of the interval      */
+	unsigned long end;            /* End byte of the interval        */
+	unsigned long end_segment;    /* Number of segs. in the interval */
+	unsigned long current;        /* Current segment being sieved    */
+	struct bucket * small;        /* List of small sieving primes    */
+	struct bucket * inactive;     /* List of inactive sieving primes */
+	struct bucket * inactive_end; /* Last node, for fast insertion   */
+	struct bucket * finished;     /* List of finished sieving primes */
+	struct bucket * pool;         /* Pool of unused buckets          */
+	struct bucket ** lists;       /* List for each seg. in interval  */
+};
+
+/* Initializes a set of primes */
+void prime_set_init(
+		struct prime_set * set,
+		unsigned long start,
+		unsigned long end);
+
+/* Adds a sieving prime to a prime set */
+void prime_set_add(struct prime_set * set,
+		unsigned long prime,
+		unsigned long next_byte,
+		unsigned int wheel_idx);
+
+/* Sets up the set/lists to sieve the next segment */
+void prime_set_advance(struct prime_set * set);
+
+/* Frees any memory allocated for the prime set, including the primes it
+   contains */
+void prime_set_cleanup(struct prime_set * set);
+
+
+/**********************************************************************\
+ * Inline routines                                                    *
+\**********************************************************************/
+
+/* Marks a multiple of a prime and updates wheel values - mod 30
+   version */
+static inline void mark_multiple_30(
+		unsigned char * sieve,
+		unsigned long prime_adj,
+		unsigned long * byte,
+		unsigned int  * wheel_idx)
+{
+	sieve[*byte] |= wheel30[*wheel_idx].mask;
+	*byte += wheel30[*wheel_idx].delta_f * prime_adj;
+	*byte += wheel30[*wheel_idx].delta_c;
+	*wheel_idx += wheel30[*wheel_idx].next;
+}
+
+/* Marks a multiple of a prime and updates wheel values - mod 210
+   version */
+static inline void mark_multiple_210(
+		unsigned char * sieve,
+		unsigned long prime_adj,
+		unsigned long * byte,
+		unsigned int  * wheel_idx)
+{
+	sieve[*byte] |= wheel210[*wheel_idx].mask;
+	*byte += wheel210[*wheel_idx].delta_f * prime_adj;
+	*byte += wheel210[*wheel_idx].delta_c;
+	*wheel_idx += wheel210[*wheel_idx].next;
+}
+
+/* Adds a prime to a bucket.  Returns false/zero if there's no space,
+   true/nonzero otherwise. */
+static inline int bucket_append(
+		struct bucket * node,
+		unsigned long prime_adj,
+		unsigned long next_byte,
+		unsigned int wheel_idx)
+{
+	unsigned long count = node->count;
+	if(count == BUCKET_PRIMES)
+	{
+		return 0;
+	}
+	node->primes[count].prime_adj = prime_adj;
+	node->primes[count].next_byte = next_byte;
+	node->primes[count].wheel_idx = wheel_idx;
+	node->count++;
+	return 1;
+}
+
+/* Allocates a bucket for a set, drawing on the existing pool if
+   possible */
+static inline struct bucket * prime_set_bucket_init(
+		struct prime_set * set,
+		struct bucket * next)
+{
+	struct bucket * node;
+	if(set->pool == NULL)
+	{
+		/* None left in pool.  Allocate one from scratch. */
+		node = malloc(sizeof(struct bucket));
+		if(node == NULL)
+		{
+			perror("malloc");
+			abort();
+		}
+	}
+	else
+	{
+		/* Use one from the set's pool */
+		node = set->pool;
+		set->pool = node->next;
+	}
+	node->count = 0UL;
+	node->next = next;
+	return node;
+}
+
+/* Inserts a prime into a list */
+static inline void prime_set_list_append(
+		struct prime_set * set,
+		struct bucket ** list,
+		unsigned long prime_adj,
+		unsigned long next_byte,
+		unsigned int wheel_idx)
+{
+	/* If the list is empty of the first bucket is full, allocate a new
+	   bucket.  Otherwise, just add to the first bucket. */
+	if(*list == NULL ||
+	   !bucket_append(*list, prime_adj, next_byte, wheel_idx))
+	{
+		struct bucket * node = prime_set_bucket_init(set, *list);
+		bucket_append(node, prime_adj, next_byte, wheel_idx);
+		*list = node;
+	}
+}
+
+/* Returns a bucket to a pool for later use */
+static inline void prime_set_bucket_return(
+		struct prime_set * set,
+		struct bucket * bucket)
+{
+	bucket->next = set->pool;
+	set->pool = bucket;
+}
+
+/* Returns the small primes stored with a set */
+static inline struct bucket * prime_set_small(struct prime_set * set)
+{
+	return set->small;
+}
+
+/* Returns the list of primes needed for the current segment */
+static inline struct bucket * prime_set_current(struct prime_set * set)
+{
+	return set->lists[set->current];
+}
+
+/* Saves a processed prime into its next list.  This is only used for
+   large sieving primes.  Small sieving primes always remain in the
+   small list. */
+static inline void prime_set_save(
+		struct prime_set * set,
+		unsigned long prime_adj,
+		unsigned long byte,
+		unsigned int wheel_idx)
+{
+	unsigned long next_seg;
+
+	/* Figure out the next segment in which this prime will be marked */
+	next_seg = set->current + byte / SEGMENT_BYTES;
+
+	/*
+	 * Distribute as appropriate.  If the next segment is out of range
+	 * or byte < SEGMENT_BYTES (indicating that this is the last
+	 * segment), put it away.  Otherwise, put it into the next list it
+	 * needs to be in.
+	 */
+	if(next_seg >= set->end_segment || byte < SEGMENT_BYTES)
+	{
+		/* The byte is stored as absolute in the finished list */
+		byte += set->start + set->current * SEGMENT_BYTES;
+
+		/* Prime goes into the finished list */
+		prime_set_list_append(set, &set->finished, prime_adj, byte,
+		                      wheel_idx);
+	}
+	else
+	{
+		/* Prime goes into a "real" list */
+		struct bucket ** list = &set->lists[next_seg];
+		byte %= SEGMENT_BYTES;
+		prime_set_list_append(set, list, prime_adj, byte, wheel_idx);
+	}
+}
 
 #endif /* !YASE_H */

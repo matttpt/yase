@@ -45,7 +45,7 @@ static const char * help_format =
  *  - Find the sieving primes (sieve_seed()).  This does not stop
  *    mid-byte in the sieve, but continues until the end of the byte
  *    containing the last bit needed to be checked to find sieving
- *    primes.  The next sieve byte is written to the pointer passed.
+ *    primes.  The sieving primes are stored in a prime set.
  *  - Sieve the rest.  This picks up with the next byte written above
  *    and continues to the last byte needed to be checked overall.  The
  *    first unneeded bit of the last byte is calculated and sent so that
@@ -57,10 +57,11 @@ static const char * help_format =
  */
 int main(int argc, char * argv[])
 {
-	unsigned long next_byte, end_byte, max, count;
+	unsigned long next_byte, end_byte, seed_end_byte, seed_end_bit, max,
+	              seed_max, count;
 	unsigned int percent;
 	double start, elapsed;
-	struct prime * seed_primes;
+	struct prime_set set;
 	enum args_action action;
 
 	/* Process arguments */
@@ -124,10 +125,6 @@ int main(int argc, char * argv[])
 	puts("Initializing pre-sieve . . .");
 	presieve_init();
 
-	/* Run the sieve for seeds */
-	puts("Finding sieving primes . . .");
-	seed_primes = sieve_seed(max, &count, &next_byte);
-
 	/*
 	 * Calculate the end byte (the first byte that is not touched).
 	 * This expression is essentially a variation on the idea that to
@@ -137,6 +134,46 @@ int main(int argc, char * argv[])
 	 * see that it works.
 	 */
 	end_byte = ((max + 1) + 28) / 30;
+
+	/*
+	 * Calculate the max value to check when finding sieving primes.
+	 * This is the largest value such that value * value <= max.  To
+	 * avoid floating-point arithmetic we just increase the value until
+	 * the condition is no longer met.
+	 */
+	seed_max = 0;
+	while(seed_max * seed_max <= max)
+	{
+		seed_max++;
+	}
+	seed_max--;
+
+	/* Find the end byte (the first byte that is not touched) for the
+	   seed sieve, using the same expression as above */
+	seed_end_byte = ((seed_max + 1) + 28) / 30;
+
+	/* Find the first bit that we do not need to check for the seed
+	   sieve */
+	if(seed_max % 30 == 0)
+	{
+		seed_end_bit = seed_end_byte * 8;
+	}
+	else
+	{
+		seed_end_bit = (seed_end_byte - 1) * 8;
+		seed_end_bit += wheel30_last_idx[seed_max % 30] + 1;
+	}
+
+	/* The next byte = seed_end_byte */
+	next_byte = seed_end_byte;
+
+	/* Initialize prime set */
+	puts("Initializing sieving prime set . . .");
+	prime_set_init(&set, next_byte, end_byte);
+
+	/* Run the sieve for seeds */
+	puts("Finding sieving primes . . .");
+	sieve_seed(seed_end_byte, seed_end_bit, &count, &set);
 	
 	/* Run the sieve for each segment */
 	percent = 0;
@@ -173,11 +210,12 @@ int main(int argc, char * argv[])
 		sieve_segment(next_byte,
 		              seg_end_byte,
 		              seg_end_bit,
-		              seed_primes,
+		              &set,
 		              &count);
 
 		/* Move forward */
 		next_byte = seg_end_byte;
+		prime_set_advance(&set);
 
 		/* Update the progress counter if the percentage has changed */
 		new_percent = (unsigned int) (next_byte * 100 / end_byte);
@@ -190,16 +228,9 @@ int main(int argc, char * argv[])
 	}
 	putchar('\n');
 
-	/* Free each seed prime */
+	/* Perform cleanup (freeing dynamically-allocated memory) */
 	puts("Cleaning up . . .");
-	while(seed_primes != NULL)
-	{
-		struct prime * to_free = seed_primes;
-		seed_primes = seed_primes->next;
-		free(to_free);
-	}
-
-	/* Clean up the pre-sieve data */
+	prime_set_cleanup(&set);
 	presieve_cleanup();
 	
 	/* Print number found and elapsed time */

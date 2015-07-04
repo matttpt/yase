@@ -74,9 +74,7 @@ void presieve_init(void)
 	wheel_idx = 8;
 	while(byte < len)
 	{
-		presieve[byte] |= wheel30[wheel_idx].mask;
-		byte += wheel30[wheel_idx].delta_c;
-		wheel_idx += wheel30[wheel_idx].next;
+		mark_multiple_30(presieve, 0UL, &byte, &wheel_idx);
 	}
 
 	/* Run pre-sieve */
@@ -89,10 +87,7 @@ void presieve_init(void)
 		wheel_idx = (i + 2) * 48;
 		while(byte < len)
 		{
-			presieve[byte] |= wheel210[wheel_idx].mask;
-			byte += wheel210[wheel_idx].delta_f * prime_adj;
-			byte += wheel210[wheel_idx].delta_c;
-			wheel_idx += wheel210[wheel_idx].next;
+			mark_multiple_210(presieve, prime_adj, &byte, &wheel_idx);
 		}
 	}
 }
