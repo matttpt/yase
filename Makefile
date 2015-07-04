@@ -12,6 +12,7 @@ VERSION_PATCH=0
 
 # List of source files to build
 SOURCES=           \
+	src/args.c     \
 	src/main.c     \
 	src/popcnt.c   \
 	src/presieve.c \

@@ -27,8 +27,15 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <time.h>
-#include <errno.h>
 #include <yase.h>
+
+/* Help format string */
+static const char * help_format =
+"Usage: %s [OPTION]... MAX\n"
+"Count and display the number of primes on the interval [0,MAX].\n\n"
+"Options:\n"
+" --help      display this help meessage\n"
+" --version   display version information\n";
 
 /*
  * Main routine!
@@ -53,32 +60,36 @@ int main(int argc, char * argv[])
 	unsigned long next_byte, end_byte, max, count;
 	unsigned int percent;
 	double start, elapsed;
-	char * strtoul_end;
 	struct prime * seed_primes;
+	enum args_action action;
 
-	/* Validate arguments */
-	if(argc != 2)
-	{
-		fprintf(stderr, "%s: invalid arguments (expected 1, got %d)\n",
-		        argv[0], argc - 1);
-		return EXIT_FAILURE;
-	}
+	/* Process arguments */
+	action = process_args(argc, argv, &max);
 
-	/* Get the range from the first argument.  errno is set to 0 to
-	   be able to distinguish an error condition. */
-	errno = 0;
-	max = strtoul(argv[1], &strtoul_end, 10);
-	if(errno != 0)
+	/* Act according to the arguments passed */
+	switch(action)
 	{
-		fputs(argv[0], stderr);
-		perror(": strtoul");
-		fprintf(stderr, "%s: invalid max range `%s'\n", argv[0], argv[1]);
-		return EXIT_FAILURE;
-	}
-	if(*strtoul_end != '\0')
-	{
-		fprintf(stderr, "%s: junk after integer for max range\n", argv[0]);
-		return EXIT_FAILURE;
+		/* Invalid arguments, so fail */
+		case ACTION_FAIL:
+			return EXIT_FAILURE;
+
+		/* Display help.  We intentionally fall through to display the
+		 * version as well. */
+		case ACTION_HELP:
+			printf(help_format, argv[0]);
+			putchar('\n');
+
+		/* Display version */
+		case ACTION_VERSION:
+			printf("yase version %u.%u.%u\n",
+			       VERSION_MAJOR, VERSION_MINOR, VERSION_PATCH);
+			puts("Copyright (c) 2015 Matthew Ingwersen");
+			return EXIT_SUCCESS;
+
+		/* Perform sieving */
+		case ACTION_SIEVE:
+			/* Handled by everything that follows */
+			break;
 	}
 
 	/* Things break if we are asked to sieve less than one byte's worth

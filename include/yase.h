@@ -119,4 +119,24 @@ void presieve_copy(
 		unsigned long start,
 		unsigned long end);
 
+/**********************************************************************\
+ * Argument processing                                                *
+\**********************************************************************/
+
+/* Enumeration indicating what to do, based on arguments */
+enum args_action
+{
+	ACTION_FAIL,
+	ACTION_HELP,
+	ACTION_VERSION,
+	ACTION_SIEVE
+};
+
+/* Processes arguments, writing back the maximum value given on the
+   command line if the action to take is ACTION_SIEVE */
+enum args_action process_args(
+		int argc,
+		char * argv[],
+		unsigned long * max);
+
 #endif /* !YASE_H */
