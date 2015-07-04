@@ -112,7 +112,6 @@ struct prime * sieve_seed(
 				if(prime_s == NULL)
 				{
 					perror("malloc");
-					free(seed_sieve);
 					abort();
 				}
 				prime_s->next_byte = byte;
