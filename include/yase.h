@@ -29,6 +29,8 @@
 
 #include <stdlib.h>
 #include <stdio.h>
+#include <stdint.h>
+#include <inttypes.h>
 
 /* Include the compile parameters and version headers */
 #include <params.h>
@@ -48,7 +50,7 @@
  * is configured by SMALL_THRESHOLD_FACTOR in config.mk.
  */
 #define SMALL_THRESHOLD \
-	((unsigned long) (SEGMENT_BYTES * SMALL_THRESHOLD_FACTOR))
+	((uint64_t) (SEGMENT_BYTES * SMALL_THRESHOLD_FACTOR))
 
 /*
  * This is based HEAVILY off the way that the "primesieve" program
@@ -57,23 +59,23 @@
  */
 struct wheel_elem
 {
-	unsigned char delta_f; /* Delta factor              */
-	unsigned char delta_c; /* Delta correction          */
-	unsigned char mask;    /* Bitmask to set bit        */
-	  signed char next;    /* Offset to next wheel_elem */
+	uint8_t delta_f; /* Delta factor              */
+	uint8_t delta_c; /* Delta correction          */
+	uint8_t mask;    /* Bitmask to set bit        */
+	int8_t  next;    /* Offset to next wheel_elem */
 };
 
 /* Exposed wheel tables.  Even though "wheel30", "wheel210" and
    "wheel210_last_idx" are not const (so that wheel_init(void) can
    generate them), obviously don't modify them. */
-extern struct wheel_elem   wheel30[64];
-extern const unsigned char wheel30_offs[8];
-extern const unsigned char wheel30_deltas[8];
-extern const unsigned char wheel30_last_idx[30];
-extern struct wheel_elem   wheel210[384];
-extern const unsigned char wheel210_offs[48];
-extern const unsigned char wheel210_deltas[48];
-extern unsigned char       wheel210_last_idx[210];
+extern struct wheel_elem wheel30[64];
+extern const uint8_t     wheel30_offs[8];
+extern const uint8_t     wheel30_deltas[8];
+extern const uint8_t     wheel30_last_idx[30];
+extern struct wheel_elem wheel210[384];
+extern const uint8_t     wheel210_offs[48];
+extern const uint8_t     wheel210_deltas[48];
+extern uint8_t           wheel210_last_idx[210];
 
 /* Wheel initialization routine */
 void wheel_init(void);
@@ -89,7 +91,7 @@ void wheel_init(void);
  * Just like the "wheel" table above, "popcnt" is not const but
  * obviously don't modify it!
  */
-extern unsigned char popcnt[256];
+extern uint8_t popcnt[256];
 
 /* Initializes the population count table */
 void popcnt_init(void);
@@ -105,25 +107,25 @@ struct prime_set;
    multiple needs to be marked next */
 struct prime
 {
-	unsigned long next_byte; /* Next byte to mark                */
-	unsigned long prime_adj; /* Prime divided by 30              */
-	unsigned int  wheel_idx; /* Current index in the wheel table */
+	uint64_t next_byte; /* Next byte to mark                */
+	uint32_t prime_adj; /* Prime divided by 30              */
+	uint32_t wheel_idx; /* Current index in the wheel table */
 };
 
 /* Finds the sieving primes */
 void sieve_seed(
-		unsigned long end_byte,
-		unsigned long end_bit,
-		unsigned long * count,
+		uint64_t end_byte,
+		uint64_t end_bit,
+		uint64_t * count,
 		struct prime_set * set);
 
 /* Sieves a segment */
 void sieve_segment(
-		unsigned long start,
-		unsigned long end,
-		unsigned long end_bit,
+		uint64_t start,
+		uint64_t end,
+		unsigned int end_bit,
 		struct prime_set * set,
-		unsigned long * count);
+		uint64_t * count);
 
 /**********************************************************************\
  * Pre-sieve mechanism                                                *
@@ -132,9 +134,9 @@ void sieve_segment(
 void presieve_init(void);
 void presieve_cleanup(void);
 void presieve_copy(
-		unsigned char * sieve,
-		unsigned long start,
-		unsigned long end);
+		uint8_t * sieve,
+		uint64_t start,
+		uint64_t end);
 
 /**********************************************************************\
  * Argument processing                                                *
@@ -154,7 +156,7 @@ enum args_action
 enum args_action process_args(
 		int argc,
 		char * argv[],
-		unsigned long * max);
+		uint64_t * max);
 
 /**********************************************************************\
  * Storage of sieving primes                                          *
@@ -172,10 +174,10 @@ struct bucket
    interval */
 struct prime_set
 {
-	unsigned long start;          /* Start byte of the interval      */
-	unsigned long end;            /* End byte of the interval        */
-	unsigned long end_segment;    /* Number of segs. in the interval */
-	unsigned long current;        /* Current segment being sieved    */
+	uint64_t start;               /* Start byte of the interval      */
+	uint64_t end;                 /* End byte of the interval        */
+	uint64_t end_segment;         /* Number of segs. in the interval */
+	uint64_t current;             /* Current segment being sieved    */
 	struct bucket * small;        /* List of small sieving primes    */
 	struct bucket * inactive;     /* List of inactive sieving primes */
 	struct bucket * inactive_end; /* Last node, for fast insertion   */
@@ -187,14 +189,14 @@ struct prime_set
 /* Initializes a set of primes */
 void prime_set_init(
 		struct prime_set * set,
-		unsigned long start,
-		unsigned long end);
+		uint64_t start,
+		uint64_t end);
 
 /* Adds a sieving prime to a prime set */
 void prime_set_add(struct prime_set * set,
-		unsigned long prime,
-		unsigned long next_byte,
-		unsigned int wheel_idx);
+		uint64_t prime,
+		uint64_t next_byte,
+		uint32_t wheel_idx);
 
 /* Sets up the set/lists to sieve the next segment */
 void prime_set_advance(struct prime_set * set);
@@ -211,10 +213,10 @@ void prime_set_cleanup(struct prime_set * set);
 /* Marks a multiple of a prime and updates wheel values - mod 30
    version */
 static inline void mark_multiple_30(
-		unsigned char * sieve,
-		unsigned long prime_adj,
-		unsigned long * byte,
-		unsigned int  * wheel_idx)
+		uint8_t *  sieve,
+		uint32_t   prime_adj,
+		uint64_t * byte,
+		uint32_t * wheel_idx)
 {
 	sieve[*byte] |= wheel30[*wheel_idx].mask;
 	*byte += wheel30[*wheel_idx].delta_f * prime_adj;
@@ -225,10 +227,10 @@ static inline void mark_multiple_30(
 /* Marks a multiple of a prime and updates wheel values - mod 210
    version */
 static inline void mark_multiple_210(
-		unsigned char * sieve,
-		unsigned long prime_adj,
-		unsigned long * byte,
-		unsigned int  * wheel_idx)
+		uint8_t *  sieve,
+		uint32_t   prime_adj,
+		uint64_t * byte,
+		uint32_t * wheel_idx)
 {
 	sieve[*byte] |= wheel210[*wheel_idx].mask;
 	*byte += wheel210[*wheel_idx].delta_f * prime_adj;
@@ -240,9 +242,9 @@ static inline void mark_multiple_210(
    true/nonzero otherwise. */
 static inline int bucket_append(
 		struct bucket * node,
-		unsigned long prime_adj,
-		unsigned long next_byte,
-		unsigned int wheel_idx)
+		uint32_t prime_adj,
+		uint64_t next_byte,
+		uint32_t wheel_idx)
 {
 	unsigned long count = node->count;
 	if(count == BUCKET_PRIMES)
@@ -288,9 +290,9 @@ static inline struct bucket * prime_set_bucket_init(
 static inline void prime_set_list_append(
 		struct prime_set * set,
 		struct bucket ** list,
-		unsigned long prime_adj,
-		unsigned long next_byte,
-		unsigned int wheel_idx)
+		uint32_t prime_adj,
+		uint64_t next_byte,
+		uint32_t wheel_idx)
 {
 	/* If the list is empty of the first bucket is full, allocate a new
 	   bucket.  Otherwise, just add to the first bucket. */
@@ -329,11 +331,11 @@ static inline struct bucket * prime_set_current(struct prime_set * set)
    small list. */
 static inline void prime_set_save(
 		struct prime_set * set,
-		unsigned long prime_adj,
-		unsigned long byte,
-		unsigned int wheel_idx)
+		uint32_t prime_adj,
+		uint64_t byte,
+		uint32_t wheel_idx)
 {
-	unsigned long next_seg;
+	uint64_t next_seg;
 
 	/* Figure out the next segment in which this prime will be marked */
 	next_seg = set->current + byte / SEGMENT_BYTES;

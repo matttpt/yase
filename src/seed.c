@@ -36,13 +36,13 @@
  * prime found.  Sieving primes found are added to the prime set given.
  */
 void sieve_seed(
-		unsigned long end_byte,
-		unsigned long end_bit,
-		unsigned long * count,
+		uint64_t end_byte,
+		uint64_t end_bit,
+		uint64_t * count,
 		struct prime_set * set)
 {
-	unsigned long i;
-	unsigned char * seed_sieve;
+	uint64_t i;
+	uint8_t * seed_sieve;
 
 	/* We don't bother to segment for this process.  We allocate the
 	   sieve segment manually. */
@@ -59,10 +59,10 @@ void sieve_seed(
 	/* Run the sieve */
 	for(i = PRESIEVE_PRIMES + 2; i < end_byte * 8; i++)
 	{
-		if((seed_sieve[i / 8] & ((unsigned char) 1U << (i % 8))) == 0)
+		if((seed_sieve[i / 8] & ((uint8_t) 1U << (i % 8))) == 0)
 		{
-			unsigned long prime, mult, prime_adj, byte;
-			unsigned int wheel_idx;
+			uint64_t prime, mult, byte;
+			uint32_t prime_adj, wheel_idx;
 
 			/* Count the prime */
 			(*count)++;
@@ -70,7 +70,7 @@ void sieve_seed(
 			/* Mark multiples */
 			prime     = (i / 8) * 30 + wheel30_offs[i % 8];
 			mult      = prime * prime;
-			prime_adj = prime / 30;
+			prime_adj = (uint32_t) (prime / 30);
 			byte      = mult / 30;
 
 			/* If the prime is under the "small threshold," its

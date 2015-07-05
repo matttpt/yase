@@ -28,7 +28,7 @@
 
 /* Population count table - be aware, this counts the unset bits, not the
    set bits, perhaps counterintuitively. */
-unsigned char popcnt[256];
+uint8_t popcnt[256];
 
 /* Initializes the population count table */
 void popcnt_init(void)
@@ -36,11 +36,11 @@ void popcnt_init(void)
 	unsigned int i;
 	for(i = 0; i < 256; i++)
 	{
-		unsigned char unset_count = 0;
+		uint8_t unset_count = 0;
 		unsigned int mask;
 		for(mask = 1; mask < 256; mask <<= 1)
 		{
-			if((i & (unsigned char) mask) == 0)
+			if((i & (uint8_t) mask) == 0)
 			{
 				unset_count++;
 			}

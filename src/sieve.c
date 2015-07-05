@@ -28,7 +28,7 @@
 #include <yase.h>
 
 /* Sieve bit array */
-static unsigned char sieve[SEGMENT_BYTES];
+static uint8_t sieve[SEGMENT_BYTES];
 
 /*
  * process_small_prime() marks the multiples of a single small sieving
@@ -71,7 +71,7 @@ static unsigned char sieve[SEGMENT_BYTES];
 
 /* Turns wheel offsets into bitmasks for marking multiples.  Only the
    non-zero entries will actually be needed. */
-static const unsigned char offs_to_mask[30] =
+static const uint8_t offs_to_mask[30] =
 	{ 0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0x00, 0x00,
 	  0x00, 0x04, 0x00, 0x08, 0x00, 0x00, 0x00, 0x10, 0x00, 0x20,
 	  0x00, 0x00, 0x00, 0x40, 0x00, 0x00, 0x00, 0x00, 0x00, 0x80 };
@@ -86,7 +86,7 @@ static const unsigned char offs_to_mask[30] =
    sure not to run over the end byte limit */
 #define BUILD_CHECK_AND_MARK(n, df, i, j)                \
 	if(byte >= lim) {                                    \
-		prime->next_byte = (unsigned long) (byte - lim); \
+		prime->next_byte = (uint64_t) (byte - lim);      \
 		prime->wheel_idx = n;                            \
 		return;                                          \
 	}                                                    \
@@ -122,14 +122,14 @@ static const unsigned char offs_to_mask[30] =
 /* process_small_prime() itself - but all of the real code is in the
    macros */
 static inline void process_small_prime(
-		unsigned long start,
-		unsigned long end,
+		uint64_t start,
+		uint64_t end,
 		struct prime * prime)
 {
 	/* From prime structure */
-	unsigned char * byte = &sieve[prime->next_byte];
-	unsigned char * lim  = &sieve[end - start];
-	unsigned long adj    = prime->prime_adj;
+	uint8_t * byte = &sieve[prime->next_byte];
+	uint8_t * lim  = &sieve[end - start];
+	uint32_t  adj  = prime->prime_adj;
 
 	/* Jump to the correct spot */
 	switch(prime->wheel_idx)
@@ -148,8 +148,8 @@ static inline void process_small_prime(
 
 /* Processes small sieving primes using the very fast mod 30 loop */
 static inline void process_small_primes(
-		unsigned long start,
-		unsigned long end,
+		uint64_t start,
+		uint64_t end,
 		struct prime_set * set)
 {
 	struct bucket * bucket = prime_set_small(set);
@@ -168,14 +168,15 @@ static inline void process_small_primes(
 
 /* Processes one bucket of large sieving primes */
 static inline void process_large_prime_bucket(
-		unsigned long start,
-		unsigned long end,
+		uint64_t start,
+		uint64_t end,
 		struct prime_set * set,
 		struct bucket * bucket)
 {
 	struct prime * next_prime, * end_prime, * p1, * p2;
-	unsigned long byte1, byte2, adj1, adj2, lim;
-	unsigned int wi1, wi2;
+	uint64_t byte1, byte2;
+	uint32_t adj1, adj2, wi1, wi2;
+	unsigned long lim;
 
 	/* If there are no large primes in the bucket, return */
 	if(bucket->count == 0)
@@ -184,7 +185,7 @@ static inline void process_large_prime_bucket(
 	}
 
 	/* Find the sieve byte limit */
-	lim = end - start;
+	lim = (unsigned long) (end - start);
 
 	/* Setup next and end primes */
 	next_prime = bucket->primes;
@@ -250,8 +251,8 @@ static inline void process_large_prime_bucket(
 /* Processes large sieving primes, marking multiples of two at a time
    if possible to leverage instruction-level parallelism */
 static inline void process_large_primes(
-		unsigned long start,
-		unsigned long end,
+		uint64_t start,
+		uint64_t end,
 		struct prime_set * set)
 {
 	struct bucket * bucket, * to_return;
@@ -273,11 +274,11 @@ static inline void process_large_primes(
    the bit after the final bit of the last byte checked that is needed.
    If end_bit == 0, the entire final byte checked is needed. */
 void sieve_segment(
-		unsigned long start,
-		unsigned long end,
-		unsigned long end_bit,
+		uint64_t start,
+		uint64_t end,
+		unsigned int end_bit,
 		struct prime_set * set,
-		unsigned long * count)
+		uint64_t * count)
 {
 	unsigned long i;
 
@@ -289,7 +290,7 @@ void sieve_segment(
 	process_large_primes(start, end, set);
 
 	/* Count primes */
-	for(i = 0; i < end - start; i++)
+	for(i = 0; i < (unsigned long) (end - start); i++)
 	{
 		(*count) += popcnt[sieve[i]];
 	}
@@ -297,7 +298,7 @@ void sieve_segment(
 	/* Prune any extra bits we didn't need in the last byte */
 	if(end_bit != 0)
 	{
-		unsigned char mask = (unsigned char) ~(0xFF << end_bit);
+		uint8_t mask = (uint8_t) ~(0xFF << end_bit);
 		(*count) -= popcnt[sieve[end - start - 1] | mask];
 	}
 }

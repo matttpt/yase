@@ -30,8 +30,8 @@
 #include <yase.h>
 
 /* Buffer for pre-sieved bits */
-static unsigned char * presieve;
-static unsigned long   presieve_len;
+static uint8_t *     presieve;
+static unsigned long presieve_len;
 
 /* List of first few primes and their wheel spokes */
 static unsigned long presieve_primes[6] =
@@ -40,16 +40,16 @@ static unsigned long presieve_primes[6] =
 /* Pre-sieve initialization */
 void presieve_init(void)
 {
-	unsigned long len, prime, prime_adj, byte;
-	unsigned int i, wheel_idx;
+	unsigned long len, i;
+	uint64_t prime, byte;
+	uint32_t prime_adj, wheel_idx;
 
 	/* Find the length of the buffer, and save to presieve_len */
-	len = 210;
+	len = 210 / 30;
 	for(i = 0; i < PRESIEVE_PRIMES; i++)
 	{
 		len *= presieve_primes[i];
 	}
-	len /= 30;
 	presieve_len = len;
 
 	/* Allocate buffer */
@@ -74,7 +74,7 @@ void presieve_init(void)
 	wheel_idx = 8;
 	while(byte < len)
 	{
-		mark_multiple_30(presieve, 0UL, &byte, &wheel_idx);
+		mark_multiple_30(presieve, 0, &byte, &wheel_idx);
 	}
 
 	/* Run pre-sieve */
@@ -100,9 +100,9 @@ void presieve_cleanup(void)
 
 /* Copies pre-sieve data into a sieve buffer */
 void presieve_copy(
-		unsigned char * sieve,
-		unsigned long start,
-		unsigned long end)
+		uint8_t * sieve,
+		uint64_t start,
+		uint64_t end)
 {
 	unsigned long ps_idx, sv_idx, sv_len;
 
@@ -111,7 +111,7 @@ void presieve_copy(
 
 	/* Copy the presieve data in */
 	sv_idx = 0;
-	sv_len = end - start;
+	sv_len = (unsigned long) (end - start);
 	while(sv_idx < sv_len)
 	{
 		unsigned long len;

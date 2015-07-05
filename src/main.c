@@ -57,8 +57,8 @@ static const char * help_format =
  */
 int main(int argc, char * argv[])
 {
-	unsigned long next_byte, end_byte, seed_end_byte, seed_end_bit, max,
-	              seed_max, count;
+	uint64_t next_byte, end_byte, seed_end_byte, seed_end_bit, max,
+	         seed_max, count;
 	unsigned int percent;
 	double start, elapsed;
 	struct prime_set set;
@@ -103,7 +103,7 @@ int main(int argc, char * argv[])
 	}
 
 	/* Initialization message */
-	printf("yase %u.%u.%u starting, checking numbers <= %lu\n",
+	printf("yase %u.%u.%u starting, checking numbers <= %" PRIu64 "\n",
 	       VERSION_MAJOR, VERSION_MINOR, VERSION_PATCH, max);
 
 	/* The sieving skips over all of the wheel primes and the pre-sieved
@@ -188,8 +188,8 @@ int main(int argc, char * argv[])
 		 *                   (seg_end_byte - 1) not to process.  If set
 		 *                   to 0, the whole final bit should be used.
 		 */
-		unsigned long seg_end_byte = next_byte + SEGMENT_BYTES;
-		unsigned long seg_end_bit = 0;
+		uint64_t seg_end_byte = next_byte + SEGMENT_BYTES;
+		unsigned int seg_end_bit = 0;
 		unsigned int new_percent;
 
 		/* If segment is longer than necessary, trim it */
@@ -235,6 +235,7 @@ int main(int argc, char * argv[])
 	
 	/* Print number found and elapsed time */
 	elapsed = (clock() - start) / CLOCKS_PER_SEC;
-	printf("Found %lu primes in %.2f seconds.\n", count, elapsed);
+	printf("Found %" PRIu64 " primes in %.2f seconds.\n", count,
+	       elapsed);
 	return EXIT_SUCCESS;
 }	

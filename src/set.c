@@ -60,10 +60,10 @@
    with the interval [start, end) */
 void prime_set_init(
 		struct prime_set * set,
-		unsigned long start,
-		unsigned long end)
+		uint64_t start,
+		uint64_t end)
 {
-	unsigned long n_lists;
+	uint64_t n_lists;
 
 	/* Allocate the list head pointers */
 	n_lists = (end - start + SEGMENT_BYTES - 1) / SEGMENT_BYTES;
@@ -78,7 +78,7 @@ void prime_set_init(
 	set->start       = start;
 	set->end         = end;
 	set->end_segment = n_lists;
-	set->current     = 0UL;
+	set->current     = 0;
 
 	/*
 	 * Set the "special" lists to NULL to start.  We don't have to worry
@@ -98,11 +98,11 @@ void prime_set_init(
    sieve_seed(), and there are some important pre-conditions for its use.
    See the notes above for information. */
 void prime_set_add(struct prime_set * set,
-		unsigned long prime,
-		unsigned long next_byte,
-		unsigned int wheel_idx)
+		uint64_t prime,
+		uint64_t next_byte,
+		uint32_t wheel_idx)
 {
-	unsigned long prime_adj = prime / 30;
+	uint32_t prime_adj = (uint32_t) (prime / 30);
 
 	/* Put the prime into the interval if necessary */
 	if(next_byte < set->start)
@@ -205,7 +205,7 @@ void prime_set_advance(struct prime_set * set)
    pointer table itself */
 void prime_set_cleanup(struct prime_set * set)
 {
-	unsigned long i;
+	uint64_t i;
 	struct bucket * bucket, * to_free;
 
 	/* Clean up small primes list */
