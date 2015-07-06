@@ -215,7 +215,7 @@ void prime_set_cleanup(struct prime_set * set);
 static inline void mark_multiple_30(
 		uint8_t *  sieve,
 		uint32_t   prime_adj,
-		uint64_t * byte,
+		uint32_t * byte,
 		uint32_t * wheel_idx)
 {
 	sieve[*byte] |= wheel30[*wheel_idx].mask;
@@ -229,7 +229,7 @@ static inline void mark_multiple_30(
 static inline void mark_multiple_210(
 		uint8_t *  sieve,
 		uint32_t   prime_adj,
-		uint64_t * byte,
+		uint32_t * byte,
 		uint32_t * wheel_idx)
 {
 	sieve[*byte] |= wheel210[*wheel_idx].mask;

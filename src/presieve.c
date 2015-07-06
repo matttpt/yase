@@ -41,8 +41,8 @@ static unsigned long presieve_primes[6] =
 void presieve_init(void)
 {
 	unsigned long len, i;
-	uint64_t prime, byte;
-	uint32_t prime_adj, wheel_idx;
+	uint64_t prime;
+	uint32_t byte, prime_adj, wheel_idx;
 
 	/* Find the length of the buffer, and save to presieve_len */
 	len = 210 / 30;
@@ -107,7 +107,7 @@ void presieve_copy(
 	unsigned long ps_idx, sv_idx, sv_len;
 
 	/* Find the start point in the pre-sieve buffer */
-	ps_idx = start % presieve_len;
+	ps_idx = (unsigned long) (start % presieve_len);
 
 	/* Copy the presieve data in */
 	sv_idx = 0;

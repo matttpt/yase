@@ -81,8 +81,8 @@ void sieve_seed(
 				wheel_idx = (i % 8) * 9;
 				while(byte < end_byte)
 				{
-					mark_multiple_30(seed_sieve, prime_adj, &byte,
-					                 &wheel_idx);
+					mark_multiple_30(seed_sieve, prime_adj,
+					                 (uint32_t *) &byte, &wheel_idx);
 				}
 			}
 			else
@@ -90,8 +90,8 @@ void sieve_seed(
 				wheel_idx = (i % 8) * 48 + wheel210_last_idx[prime % 210];
 				while(byte < end_byte)
 				{
-					mark_multiple_210(seed_sieve, prime_adj, &byte,
-					                  &wheel_idx);
+					mark_multiple_210(seed_sieve, prime_adj,
+					                  (uint32_t *) &byte, &wheel_idx);
 				}
 			}
 

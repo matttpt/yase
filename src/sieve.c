@@ -174,8 +174,7 @@ static inline void process_large_prime_bucket(
 		struct bucket * bucket)
 {
 	struct prime * next_prime, * end_prime, * p1, * p2;
-	uint64_t byte1, byte2;
-	uint32_t adj1, adj2, wi1, wi2;
+	uint32_t byte1, byte2, adj1, adj2, wi1, wi2;
 	unsigned long lim;
 
 	/* If there are no large primes in the bucket, return */
@@ -199,10 +198,10 @@ static inline void process_large_prime_bucket(
 	while(p1 != NULL && p2 != NULL)
 	{
 		/* Load primes */
-		byte1 = p1->next_byte;
+		byte1 = (uint32_t) p1->next_byte;
 		adj1  = p1->prime_adj;
 		wi1   = p1->wheel_idx;
-		byte2 = p2->next_byte;
+		byte2 = (uint32_t) p2->next_byte;
 		adj2  = p2->prime_adj;
 		wi2   = p2->wheel_idx;
 
@@ -226,8 +225,8 @@ static inline void process_large_prime_bucket(
 		}
 
 		/* Save old two back to the set */
-		prime_set_save(set, adj1, byte1, wi1);
-		prime_set_save(set, adj2, byte2, wi2);
+		prime_set_save(set, adj1, (uint64_t) byte1, wi1);
+		prime_set_save(set, adj2, (uint64_t) byte2, wi2);
 
 		/* Fetch two more primes */
 		p1 = (next_prime < end_prime ? next_prime++ : NULL);
@@ -244,7 +243,7 @@ static inline void process_large_prime_bucket(
 		{
 			mark_multiple_210(sieve, adj1, &byte1, &wi1);
 		}
-		prime_set_save(set, adj1, byte1, wi1);
+		prime_set_save(set, adj1, (uint64_t) byte1, wi1);
 	}
 }
 
@@ -280,7 +279,7 @@ void sieve_segment(
 		struct prime_set * set,
 		uint64_t * count)
 {
-	unsigned long i;
+	unsigned long i, seg_count;
 
 	/* Copy in pre-sieve data */
 	presieve_copy(sieve, start, end);
@@ -290,15 +289,19 @@ void sieve_segment(
 	process_large_primes(start, end, set);
 
 	/* Count primes */
+	seg_count = 0;
 	for(i = 0; i < (unsigned long) (end - start); i++)
 	{
-		(*count) += popcnt[sieve[i]];
+		seg_count += popcnt[sieve[i]];
 	}
 
 	/* Prune any extra bits we didn't need in the last byte */
 	if(end_bit != 0)
 	{
 		uint8_t mask = (uint8_t) ~(0xFF << end_bit);
-		(*count) -= popcnt[sieve[end - start - 1] | mask];
+		seg_count -= popcnt[sieve[end - start - 1] | mask];
 	}
+
+	/* Update caller's count of primes */
+	(*count) += seg_count;
 }
