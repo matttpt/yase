@@ -123,12 +123,11 @@ static const uint8_t offs_to_mask[30] =
    macros */
 static inline void process_small_prime(
 		uint64_t start,
-		uint64_t end,
 		struct prime * prime)
 {
 	/* From prime structure */
 	uint8_t * byte = &sieve[prime->next_byte];
-	uint8_t * lim  = &sieve[end - start];
+	uint8_t * lim  = &sieve[SEGMENT_BYTES];
 	uint32_t  adj  = prime->prime_adj;
 
 	/* Jump to the correct spot */
@@ -149,7 +148,6 @@ static inline void process_small_prime(
 /* Processes small sieving primes using the very fast mod 30 loop */
 static inline void process_small_primes(
 		uint64_t start,
-		uint64_t end,
 		struct prime_set * set)
 {
 	struct bucket * bucket = prime_set_small(set);
@@ -159,7 +157,7 @@ static inline void process_small_primes(
 		struct prime * p_end = &bucket->primes[bucket->count];
 		while(prime < p_end)
 		{
-			process_small_prime(start, end, prime);
+			process_small_prime(start, prime);
 			prime++;
 		}
 		bucket = bucket->next;
@@ -169,22 +167,17 @@ static inline void process_small_primes(
 /* Processes one bucket of large sieving primes */
 static inline void process_large_prime_bucket(
 		uint64_t start,
-		uint64_t end,
 		struct prime_set * set,
 		struct bucket * bucket)
 {
 	struct prime * next_prime, * end_prime, * p1, * p2;
 	uint32_t byte1, byte2, adj1, adj2, wi1, wi2;
-	unsigned long lim;
 
 	/* If there are no large primes in the bucket, return */
 	if(bucket->count == 0)
 	{
 		return;
 	}
-
-	/* Find the sieve byte limit */
-	lim = (unsigned long) (end - start);
 
 	/* Setup next and end primes */
 	next_prime = bucket->primes;
@@ -206,20 +199,20 @@ static inline void process_large_prime_bucket(
 		wi2   = p2->wheel_idx;
 
 		/* For as long as possible, do both together */
-		while(byte1 < lim && byte2 < lim)
+		while(byte1 < SEGMENT_BYTES && byte2 < SEGMENT_BYTES)
 		{
 			mark_multiple_210(sieve, adj1, &byte1, &wi1);
 			mark_multiple_210(sieve, adj2, &byte2, &wi2);
 		}
 
 		/* Finish first if necessary */
-		while(byte1 < lim)
+		while(byte1 < SEGMENT_BYTES)
 		{
 			mark_multiple_210(sieve, adj1, &byte1, &wi1);
 		}
 
 		/* Finish second if necessary */
-		while(byte2 < lim)
+		while(byte2 < SEGMENT_BYTES)
 		{
 			mark_multiple_210(sieve, adj2, &byte2, &wi2);
 		}
@@ -239,7 +232,7 @@ static inline void process_large_prime_bucket(
 		byte1 = p1->next_byte;
 		adj1  = p1->prime_adj;
 		wi1   = p1->wheel_idx;
-		while(byte1 < lim)
+		while(byte1 < SEGMENT_BYTES)
 		{
 			mark_multiple_210(sieve, adj1, &byte1, &wi1);
 		}
@@ -251,18 +244,17 @@ static inline void process_large_prime_bucket(
    if possible to leverage instruction-level parallelism */
 static inline void process_large_primes(
 		uint64_t start,
-		uint64_t end,
 		struct prime_set * set)
 {
 	struct bucket * bucket, * to_return;
 
 	/* Fetch the list we need */
-	bucket = prime_set_current(set);
+	bucket = set->lists[0];
 
 	/* Process each bucket */
 	while(bucket != NULL)
 	{
-		process_large_prime_bucket(start, end, set, bucket);
+		process_large_prime_bucket(start, set, bucket);
 		to_return = bucket;
 		bucket    = bucket->next;
 		prime_set_bucket_return(set, to_return);
@@ -285,8 +277,8 @@ void sieve_segment(
 	presieve_copy(sieve, start, end);
 
 	/* Mark multiples of each sieving prime */
-	process_small_primes(start, end, set);
-	process_large_primes(start, end, set);
+	process_small_primes(start, set);
+	process_large_primes(start, set);
 
 	/* Count primes */
 	seg_count = 0;

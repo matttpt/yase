@@ -27,6 +27,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#include <math.h>
 #include <yase.h>
 
 /*
@@ -56,6 +57,32 @@
  * terms, i.e. if one massive, unsegmented sieving bit array were used.
  */
 
+/* Determines how many list head pointers to allocate, based on the
+   maximum number of active lists that should be needed at any given
+   point */
+static unsigned long find_lists_needed(uint64_t end)
+{
+	double max_multiple_delta;
+	unsigned long max_segment_delta, lists_needed;
+
+	/* We first find a cap on the largest value a sieving prime could
+	   take for the interval being sieved, and multiply that by 10
+	   (as the greatest gap between multiples needing to be marked on a
+	   mod 210 wheel is 10 * prime) */
+	max_multiple_delta = sqrt((double) (end * 30)) * 10;
+
+	/* Now we determine how many segments that delta is, and add one to
+	   ensure that we round up */
+	max_segment_delta = (max_multiple_delta / (SEGMENT_BYTES * 30)) + 1;
+
+	/* The above value should reflect how many segments forward we will
+	   ever have to keep track of.  In addition, we will have to keep
+	   track of the current segment, so the number of lists needed is
+	   one greater. */
+	lists_needed = max_segment_delta + 1;
+	return lists_needed;
+}
+
 /* Allocates and initializes an empty set of sieving primes, for use
    with the interval [start, end) */
 void prime_set_init(
@@ -63,21 +90,27 @@ void prime_set_init(
 		uint64_t start,
 		uint64_t end)
 {
-	uint64_t n_lists;
+	uint64_t n_segs;
+	unsigned long lists_alloc;
 
-	/* Allocate the list head pointers */
-	n_lists = (end - start + SEGMENT_BYTES - 1) / SEGMENT_BYTES;
-	set->lists = calloc(n_lists, sizeof(struct bucket *));
+	/* Determine how many segments there are */
+	n_segs = (end - start + SEGMENT_BYTES - 1) / SEGMENT_BYTES;
+
+	/* Allocate the list head pointers - as many as will be needed at
+	   one time */
+	lists_alloc = find_lists_needed(end);
+	set->lists = calloc(lists_alloc, sizeof(struct bucket *));
 	if(set->lists == NULL)
 	{
 		perror("calloc");
 		abort();
 	}
+	set->lists_alloc = lists_alloc;
 
 	/* Set up set metadata */
 	set->start       = start;
 	set->end         = end;
-	set->end_segment = n_lists;
+	set->end_segment = n_segs;
 	set->current     = 0;
 
 	/*
@@ -88,7 +121,7 @@ void prime_set_init(
 	set->small        = NULL;
 	set->inactive     = NULL;
 	set->inactive_end = NULL;
-	set->finished     = NULL;
+	set->unused       = NULL;
 
 	/* Start with no buckets allocated */
 	set->pool = NULL;
@@ -123,7 +156,7 @@ void prime_set_add(struct prime_set * set,
 	{
 		/* We don't need to worry about the prime on this
 		   interval */
-		prime_set_list_append(set, &set->finished, prime_adj,
+		prime_set_list_append(set, &set->unused, prime_adj,
 		                      next_byte, wheel_idx);
 	}
 	else
@@ -161,8 +194,11 @@ void prime_set_add(struct prime_set * set,
 /* Advances to the list for the next segment */
 void prime_set_advance(struct prime_set * set)
 {
-	/* Clear out old pointer, advance current segment */
-	set->lists[set->current++] = NULL;
+	/* Shift list pointers, update current segment */
+	memmove(set->lists, set->lists + 1,
+	        (set->lists_alloc - 1) * sizeof(struct bucket *));
+	set->lists[set->lists_alloc - 1] = NULL;
+	set->current++;
 
 	/*
 	 * Activate appropriate inactive primes.  We don't check if the
@@ -187,7 +223,14 @@ void prime_set_advance(struct prime_set * set)
 		while(prime < end &&
 		      prime->next_byte / SEGMENT_BYTES <= set->current)
 		{
-			list = &set->lists[prime->next_byte / SEGMENT_BYTES];
+			uint64_t next_seg;
+
+			/* Calculate next segment index */
+			next_seg = prime->next_byte / SEGMENT_BYTES;
+			next_seg -= set->current;
+
+			/* Add prime to list */
+			list = &set->lists[next_seg];
 			prime_set_list_append(set, list, prime->prime_adj,
 			                      prime->next_byte % SEGMENT_BYTES,
 			                      prime->wheel_idx);
@@ -239,8 +282,8 @@ void prime_set_cleanup(struct prime_set * set)
 		free(to_free);
 	}
 
-	/* Clean up the finished list */
-	bucket = set->finished;
+	/* Clean up the unused list */
+	bucket = set->unused;
 	while(bucket != NULL)
 	{
 		to_free = bucket;
@@ -249,7 +292,7 @@ void prime_set_cleanup(struct prime_set * set)
 	}
 
 	/* Clean up each regular list */
-	for(i = 0; i < set->end_segment; i++)
+	for(i = 0; i < set->lists_alloc; i++)
 	{
 		bucket = set->lists[i];
 		while(bucket != NULL)

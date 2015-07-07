@@ -9,6 +9,9 @@
 CC=cc
 CFLAGS=-Wall -O3 -std=c99
 
+# Library configuration
+MATH_LIBRARY=-lm
+
 # Enable this for debugging.  Disabled by default.
 #CFLAGS+=-g
 

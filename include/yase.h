@@ -178,10 +178,11 @@ struct prime_set
 	uint64_t end;                 /* End byte of the interval        */
 	uint64_t end_segment;         /* Number of segs. in the interval */
 	uint64_t current;             /* Current segment being sieved    */
+	unsigned long lists_alloc;    /* Number of list ptrs allocated   */
 	struct bucket * small;        /* List of small sieving primes    */
 	struct bucket * inactive;     /* List of inactive sieving primes */
 	struct bucket * inactive_end; /* Last node, for fast insertion   */
-	struct bucket * finished;     /* List of finished sieving primes */
+	struct bucket * unused;       /* List of unused sieving primes   */
 	struct bucket * pool;         /* Pool of unused buckets          */
 	struct bucket ** lists;       /* List for each seg. in interval  */
 };
@@ -320,12 +321,6 @@ static inline struct bucket * prime_set_small(struct prime_set * set)
 	return set->small;
 }
 
-/* Returns the list of primes needed for the current segment */
-static inline struct bucket * prime_set_current(struct prime_set * set)
-{
-	return set->lists[set->current];
-}
-
 /* Saves a processed prime into its next list.  This is only used for
    large sieving primes.  Small sieving primes always remain in the
    small list. */
@@ -335,33 +330,15 @@ static inline void prime_set_save(
 		uint64_t byte,
 		uint32_t wheel_idx)
 {
+	struct bucket ** list;
 	uint64_t next_seg;
 
-	/* Figure out the next segment in which this prime will be marked */
-	next_seg = set->current + byte / SEGMENT_BYTES;
-
-	/*
-	 * Distribute as appropriate.  If the next segment is out of range
-	 * or byte < SEGMENT_BYTES (indicating that this is the last
-	 * segment), put it away.  Otherwise, put it into the next list it
-	 * needs to be in.
-	 */
-	if(next_seg >= set->end_segment || byte < SEGMENT_BYTES)
-	{
-		/* The byte is stored as absolute in the finished list */
-		byte += set->start + set->current * SEGMENT_BYTES;
-
-		/* Prime goes into the finished list */
-		prime_set_list_append(set, &set->finished, prime_adj, byte,
-		                      wheel_idx);
-	}
-	else
-	{
-		/* Prime goes into a "real" list */
-		struct bucket ** list = &set->lists[next_seg];
-		byte %= SEGMENT_BYTES;
-		prime_set_list_append(set, list, prime_adj, byte, wheel_idx);
-	}
+	/* Figure out the next segment in which this prime will be marked,
+	   and place it in the appropriate list */
+	next_seg = byte / SEGMENT_BYTES;
+	list = &set->lists[next_seg];
+	byte %= SEGMENT_BYTES;
+	prime_set_list_append(set, list, prime_adj, byte, wheel_idx);
 }
 
 #endif /* !YASE_H */

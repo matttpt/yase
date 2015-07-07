@@ -49,7 +49,7 @@ all: yase
 
 # yase: program binary
 yase: $(OBJECTS) config.mk
-	$(CC) $(CFLAGS) $(OBJECTS) -o yase
+	$(CC) $(CFLAGS) $(OBJECTS) $(MATH_LIBRARY) -o yase
 
 # build: directory for intermediate build files
 build:
