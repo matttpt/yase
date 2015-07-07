@@ -27,6 +27,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <time.h>
+#include <math.h>
 #include <yase.h>
 
 /* Help format string */
@@ -137,16 +138,9 @@ int main(int argc, char * argv[])
 
 	/*
 	 * Calculate the max value to check when finding sieving primes.
-	 * This is the largest value such that value * value <= max.  To
-	 * avoid floating-point arithmetic we just increase the value until
-	 * the condition is no longer met.
+	 * This is the largest value such that value * value <= max.
 	 */
-	seed_max = 0;
-	while(seed_max * seed_max <= max)
-	{
-		seed_max++;
-	}
-	seed_max--;
+	seed_max = (uint64_t) sqrt((double) max);
 
 	/* Find the end byte (the first byte that is not touched) for the
 	   seed sieve, using the same expression as above */
