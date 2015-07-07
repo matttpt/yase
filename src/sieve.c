@@ -150,7 +150,7 @@ static inline void process_small_primes(
 		uint64_t start,
 		struct prime_set * set)
 {
-	struct bucket * bucket = prime_set_small(set);
+	struct bucket * bucket = set->small;
 	while(bucket != NULL)
 	{
 		struct prime * prime = bucket->primes;

@@ -206,7 +206,6 @@ void prime_set_advance(struct prime_set * set);
    contains */
 void prime_set_cleanup(struct prime_set * set);
 
-
 /**********************************************************************\
  * Inline routines                                                    *
 \**********************************************************************/
@@ -313,12 +312,6 @@ static inline void prime_set_bucket_return(
 {
 	bucket->next = set->pool;
 	set->pool = bucket;
-}
-
-/* Returns the small primes stored with a set */
-static inline struct bucket * prime_set_small(struct prime_set * set)
-{
-	return set->small;
 }
 
 /* Saves a processed prime into its next list.  This is only used for
