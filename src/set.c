@@ -176,15 +176,16 @@ void prime_set_advance(struct prime_set * set)
 	          <= set->current)
 	{
 		struct prime * prime, * end;
-		struct bucket * to_return;
 		struct bucket ** list;
 
 		/* Setup prime and end */
 		prime = set->inactive->primes;
 		end   = &set->inactive->primes[set->inactive->count];
 
-		/* Unload the whole bucket */
-		while(prime < end)
+		/* Unload the portion of the bucket that needs to be
+		   activated */
+		while(prime < end &&
+		      prime->next_byte / SEGMENT_BYTES <= set->current)
 		{
 			list = &set->lists[prime->next_byte / SEGMENT_BYTES];
 			prime_set_list_append(set, list, prime->prime_adj,
@@ -193,11 +194,23 @@ void prime_set_advance(struct prime_set * set)
 			prime++;
 		}
 
-		/* Advance to next bucket, returning the emptied bucket to the
-		   pool */
-		to_return = set->inactive;
-		set->inactive = set->inactive->next;
-		prime_set_bucket_return(set, to_return);
+		/* Shift bucket contents or, if the bucket is empty, return it
+		   to the pool */
+		if(prime < end)
+		{
+			/* Shift contents if primes remain in the bucket */
+			memmove(set->inactive->primes, prime,
+			        (end - prime) * sizeof(struct prime));
+			set->inactive->count = end - prime;
+		}
+		else
+		{
+			/* Advance to next bucket, returning the emptied bucket to
+			   the pool */
+			struct bucket * to_return = set->inactive;
+			set->inactive = set->inactive->next;
+			prime_set_bucket_return(set, to_return);
+		}
 	}
 }
 
