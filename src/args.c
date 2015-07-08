@@ -71,6 +71,15 @@ enum args_action process_args(
 		return ACTION_FAIL;
 	}
 
+	/* Things break if we are asked to sieve less than one byte's worth
+	   of a range.  Thus, max >= 30. */
+	if(*max < 30)
+	{
+		fprintf(stderr, "%s: maximum number to check must be >= 30\n",
+		        argv[0]);
+		return ACTION_FAIL;
+	}
+
 	/* No problems.  We should sieve. */
 	return ACTION_SIEVE;
 }

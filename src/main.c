@@ -96,15 +96,6 @@ int main(int argc, char * argv[])
 			break;
 	}
 
-	/* Things break if we are asked to sieve less than one byte's worth
-	   of a range.  Thus, max >= 30. */
-	if(max < 30)
-	{
-		fprintf(stderr, "%s: maximum number to check must be >= 30\n",
-		        argv[0]);
-		return EXIT_FAILURE;
-	}
-
 	/* Initialization message */
 	printf("yase %u.%u.%u starting, checking numbers <= %" PRIu64 "\n",
 	       VERSION_MAJOR, VERSION_MINOR, VERSION_PATCH, max);
