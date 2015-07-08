@@ -30,6 +30,9 @@
 #include <math.h>
 #include <yase.h>
 
+/* Saved program name - globally accessed for error messages, etc. */
+const char * yase_program_name;
+
 /* Help format string */
 static const char * help_format =
 "Usage: %s [OPTION]... MAX\n"
@@ -66,6 +69,9 @@ int main(int argc, char * argv[])
 	double start, elapsed;
 	struct prime_set set;
 	enum args_action action;
+
+	/* Save program name, for error messages and such */
+	yase_program_name = argv[0];
 
 	/* Process arguments */
 	action = process_args(argc, argv, &max);

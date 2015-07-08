@@ -56,7 +56,7 @@ void presieve_init(void)
 	presieve = malloc(len);
 	if(presieve == NULL)
 	{
-		perror("malloc");
+		YASE_PERROR("malloc");
 		abort();
 	}
 

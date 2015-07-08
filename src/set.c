@@ -102,7 +102,7 @@ void prime_set_init(
 	set->lists = calloc(lists_alloc, sizeof(struct bucket *));
 	if(set->lists == NULL)
 	{
-		perror("calloc");
+		YASE_PERROR("calloc");
 		abort();
 	}
 	set->lists_alloc = lists_alloc;

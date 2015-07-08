@@ -102,7 +102,8 @@ static int expect(struct token * toks, enum token_type type)
 	int res = accept(toks, type);
 	if(!res)
 	{
-		fprintf(stderr, "expected %s\n", type_to_string(type));
+		fprintf(stderr, "%s: expected %s\n", yase_program_name,
+		        type_to_string(type));
 		return 0;
 	}
 	else
@@ -227,7 +228,7 @@ static struct token * alloc_token(void)
 	struct token * tok = malloc(sizeof(struct token));
 	if(tok == NULL)
 	{
-		perror("malloc");
+		YASE_PERROR("malloc");
 		abort();
 	}
 	return tok;
@@ -257,7 +258,7 @@ static int tokenize_literal(const char ** expr, struct token ** toks)
 	value = (uint64_t) strtoull(*expr, &end_ptr, 10);
 	if(errno != 0)
 	{
-		perror("strtoull");
+		YASE_PERROR("strtoull");
 		return 0;
 	}
 	local_expr = end_ptr;
@@ -272,14 +273,15 @@ static int tokenize_literal(const char ** expr, struct token ** toks)
 		exp = (unsigned long) strtoul(local_expr, &end_ptr, 10);
 		if(errno != 0)
 		{
-			perror("strtoul");
+			YASE_PERROR("strtoul");
 			return 0;
 		}
 		for(i = 0; i < exp; i++)
 		{
 			if(value > UINT64_MAX / 10 + 1)
 			{
-				fputs("numeric literal would overflow\n", stderr);
+				fprintf(stderr, "%s: numeric literal would overflow\n",
+				        yase_program_name);
 				return 0;
 			}
 			value *= 10;
@@ -375,8 +377,8 @@ static int tokenize(const char * expr, struct token ** toks)
 		}
 		else
 		{
-			fprintf(stderr, "unexpected '%c'\n",
-			        (int) *expr);
+			fprintf(stderr, "%s: unexpected '%c'\n",
+			        yase_program_name, (int) *expr);
 			return 0;
 		}
 	}

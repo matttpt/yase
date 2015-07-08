@@ -36,6 +36,16 @@
 #include <params.h>
 #include <version.h>
 
+/* We save the program name to this global variable, so that it can be
+   accessed for error messages.  Kind of messy, but there's no other
+   good, portable way.  The pointer should be considered immutable. */
+extern const char * yase_program_name;
+
+/* Better perror() macro */
+#define YASE_PERROR(str) \
+	do { fprintf(stderr, "%s: ", yase_program_name); \
+	     perror(str); } while(0)
+
 /**********************************************************************\
  * Wheel structures                                                   *
 \**********************************************************************/
@@ -277,7 +287,7 @@ static inline struct bucket * prime_set_bucket_init(
 		node = malloc(sizeof(struct bucket));
 		if(node == NULL)
 		{
-			perror("malloc");
+			YASE_PERROR("malloc");
 			abort();
 		}
 	}

@@ -59,7 +59,7 @@ enum args_action process_args(
 	if(argc != 2)
 	{
 		fprintf(stderr, "%s: invalid arguments (expected 1, got %d)\n",
-		        argv[0], argc - 1);
+		        yase_program_name, argc - 1);
 		return ACTION_FAIL;
 	}
 
@@ -67,7 +67,7 @@ enum args_action process_args(
 	if(!evaluate(argv[1], max))
 	{
 		fprintf(stderr, "%s: failed to evaluate maximum value\n",
-		        argv[0]);
+		        yase_program_name);
 		return ACTION_FAIL;
 	}
 
@@ -76,7 +76,7 @@ enum args_action process_args(
 	if(*max < 30)
 	{
 		fprintf(stderr, "%s: maximum number to check must be >= 30\n",
-		        argv[0]);
+		        yase_program_name);
 		return ACTION_FAIL;
 	}
 

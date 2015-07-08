@@ -49,7 +49,7 @@ void sieve_seed(
 	seed_sieve = malloc(end_byte);
 	if(seed_sieve == NULL)
 	{
-		perror("malloc");
+		YASE_PERROR("malloc");
 		abort();
 	}
 
