@@ -33,7 +33,9 @@
 /* Help format string */
 static const char * help_format =
 "Usage: %s [OPTION]... MAX\n"
-"Count and display the number of primes on the interval [0,MAX].\n\n"
+"Count and display the number of primes on the interval [0,MAX].  MAX may\n"
+"be an expression, e.g. 2^32-1.  Supported operations are addition (+),\n"
+"subtraction (-), multiplication (*), and exponentiation  (** or ^).\n\n"
 "Options:\n"
 " --help      display this help meessage\n"
 " --version   display version information\n";
@@ -232,4 +234,4 @@ int main(int argc, char * argv[])
 	printf("Found %" PRIu64 " primes in %.2f seconds.\n", count,
 	       elapsed);
 	return EXIT_SUCCESS;
-}	
+}

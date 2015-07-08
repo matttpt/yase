@@ -27,7 +27,6 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
-#include <errno.h>
 #include <yase.h>
 
 /* Processes program arguments, returning the action to take.  If the
@@ -38,7 +37,6 @@ enum args_action process_args(
 		char * argv[],
 		uint64_t * max)
 {
-	char * strtoull_end;
 	int i;
 
 	/* If any argument is "--help", we will display help information.
@@ -65,20 +63,11 @@ enum args_action process_args(
 		return ACTION_FAIL;
 	}
 
-	/* Get the range from the first argument.  errno is set to 0 to
-	   be able to distinguish an error condition. */
-	errno = 0;
-	*max = (uint64_t) strtoull(argv[1], &strtoull_end, 10);
-	if(errno != 0)
+	/* Get the range from the first argument */
+	if(!evaluate(argv[1], max))
 	{
-		fputs(argv[0], stderr);
-		perror(": strtoull");
-		fprintf(stderr, "%s: invalid max range `%s'\n", argv[0], argv[1]);
-		return ACTION_FAIL;
-	}
-	if(*strtoull_end != '\0')
-	{
-		fprintf(stderr, "%s: junk after integer for max range\n", argv[0]);
+		fprintf(stderr, "%s: failed to evaluate maximum value\n",
+		        argv[0]);
 		return ACTION_FAIL;
 	}
 
