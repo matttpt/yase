@@ -122,7 +122,6 @@ static const uint8_t offs_to_mask[30] =
 /* process_small_prime() itself - but all of the real code is in the
    macros */
 static inline void process_small_prime(
-		uint64_t start,
 		struct prime * prime)
 {
 	/* From prime structure */
@@ -147,7 +146,6 @@ static inline void process_small_prime(
 
 /* Processes small sieving primes using the very fast mod 30 loop */
 static inline void process_small_primes(
-		uint64_t start,
 		struct prime_set * set)
 {
 	struct bucket * bucket = set->small;
@@ -157,7 +155,7 @@ static inline void process_small_primes(
 		struct prime * p_end = &bucket->primes[bucket->count];
 		while(prime < p_end)
 		{
-			process_small_prime(start, prime);
+			process_small_prime(prime);
 			prime++;
 		}
 		bucket = bucket->next;
@@ -166,7 +164,6 @@ static inline void process_small_primes(
 
 /* Processes one bucket of large sieving primes */
 static inline void process_large_prime_bucket(
-		uint64_t start,
 		struct prime_set * set,
 		struct bucket * bucket)
 {
@@ -243,7 +240,6 @@ static inline void process_large_prime_bucket(
 /* Processes large sieving primes, marking multiples of two at a time
    if possible to leverage instruction-level parallelism */
 static inline void process_large_primes(
-		uint64_t start,
 		struct prime_set * set)
 {
 	struct bucket * bucket, * to_return;
@@ -254,7 +250,7 @@ static inline void process_large_primes(
 	/* Process each bucket */
 	while(bucket != NULL)
 	{
-		process_large_prime_bucket(start, set, bucket);
+		process_large_prime_bucket(set, bucket);
 		to_return = bucket;
 		bucket    = bucket->next;
 		prime_set_bucket_return(set, to_return);
@@ -277,8 +273,8 @@ void sieve_segment(
 	presieve_copy(sieve, start, end);
 
 	/* Mark multiples of each sieving prime */
-	process_small_primes(start, set);
-	process_large_primes(start, set);
+	process_small_primes(set);
+	process_large_primes(set);
 
 	/* Count primes */
 	seg_count = 0;
