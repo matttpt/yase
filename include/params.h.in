@@ -1,0 +1,9 @@
+#ifndef PARAMS_H
+#define PARAMS_H
+
+#define SEGMENT_BYTES          @SEGMENT_BYTES@
+#define PRESIEVE_PRIMES        @PRESIEVE_PRIMES@
+#define SMALL_THRESHOLD_FACTOR @SMALL_THRESHOLD_FACTOR@
+#define BUCKET_PRIMES          @BUCKET_PRIMES@
+
+#endif /* PARAMS_H */

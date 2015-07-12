@@ -1,46 +1,43 @@
 ########################################################################
-# yase - config.mk                                                     #
+# yase - config.cmake                                                  #
 # Edit build options here.                                             #
 ########################################################################
 
-# Compiler configuration
-# CC:     what C compiler to use
-# CFLAGS: what basic options to pass to the C compiler
-CC=cc
-CFLAGS=-Wall -O3 -std=c99
-
-# Library configuration
-MATH_LIBRARY=-lm
-
-# Enable this for debugging.  Disabled by default.
-#CFLAGS+=-g
+# Build type.
+#  - "Debug" produces unoptimized binaries with debugging symbols.
+#  - "Release" produces optimized binaries without debugging symbols.
+#  - "RelWithDebInfo" produces optimized binaries w/ debugging symbols.
+#  - "MinSizeRel" produces binaries optimized for size.
+set(CMAKE_BUILD_TYPE Release)
 
 # Enable this to tune to your native CPU, but not to generate assembly
 # specific to it.  If you select this, do not select the next option.
 # Disabled by default (as the next option is enabled by default).
-#CFLAGS+=-mtune=native
+# NOTE: this flag may not work on compilers other than GCC and Clang.
+#add_definitions("-mtune=native")
 
 # Enable this to generate code specific to your native CPU.  If you
 # select this, do not select the above option.  Enabled by default.
-CFLAGS+=-march=native
+# NOTE: this flag may not work on compilers other than GCC and Clang.
+add_definitions("-march=native")
 
 # Size of a sieve segment in bytes (default: 32 KB)
-SEGMENT_BYTES=32768
+set(SEGMENT_BYTES 32768)
 
 # Number of primes to pre-sieve.  You can pick anything from 0 to 6,
 # inclusive.
 #  - 4: requires ~0.3 MB
 #  - 5: default and recommended, requires ~7 MB
 #  - 6: requires ~206 MB
-PRESIEVE_PRIMES=5
+set(PRESIEVE_PRIMES 5)
 
 # Primes smaller than the "small threshold" will be sieved with a highly
 # optimized sieving loop that is much more efficient when marking
 # multiples of sieving primes with many multiples per segment.  To find
 # this threshold, the value of SEGMENT_BYTES is multipled by this factor.
 # The default is 0.5, which should work well.
-SMALL_THRESHOLD_FACTOR=0.5
+set(SMALL_THRESHOLD_FACTOR 0.5)
 
 # When put into storage lists, large sieving primes are stored in
 # "buckets" that contain many primes each.  This controls how many.
-BUCKET_PRIMES=1024
+set(BUCKET_PRIMES 1024)
