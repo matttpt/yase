@@ -3,6 +3,41 @@ Change Log
 
 All notable changes to this project will be documented in this file.
 
+## 0.3.0 - 2015-07-14
+### Added
+ - Introduce a highly-optimized sieve for small sieving primes.  The
+   threshold between small and large sieving primes is configurable
+   via the new setting `SMALL_THRESHOLD_FACTOR`.
+ - Sort large sieving primes based on the index of their next multiple
+   for a significant performance boost.  How many primes are stored per
+   bucket is configurable via the new setting `BUCKET_PRIMES`.
+ - Store sieving primes in linked lists of "buckets," each containing
+   many sieving primes, for improved performance.
+ - Add `--help` and `--version` flags, with appropriate informational
+   messages.
+ - Allow mathematical expressions to be used for the values specified on
+   the command line.  Supported operators are addition (`+`),
+   subtraction (`-`), multiplication (`*`), and exponentiation (`**` or
+   `^`).  "E-notatation" for scientific notation (e.g. `1e10`) is also
+   supported.
+
+### Changed
+ - Convert build system to CMake for increased portability:
+   - `config.mk` is now `config.cmake` and written in CMake format.
+     `config.mk.default` is similarly renamed.  You will have to convert
+      your configuration before compiling.  If you choose to perform an
+      out-of-source build (now possible!), `config.cmake` is placed in
+      the build directory, not the source distribution.
+   - There is no longer a `make source-dist`, but you can now make both
+     source and binary distributions with CPack.
+ - Use fixed-width integer types, allowing yase to sieve much higher
+   than 2^32 on 32-bit systems, albeit somewhat slower than on 64-bit
+   machines.
+ - Various tweaks for improved performance.
+ - De-duplicate multiple marking code, move argument processing to
+   `src/args.c`, and other code cleanup.
+ - Show (invoked) program name in all error messages.
+
 ## 0.2.0 - 2015-06-24
 ### Added
  - Pre-sieving of multiples of small sieving primes.  Set
