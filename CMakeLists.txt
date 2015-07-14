@@ -37,7 +37,7 @@ configure_file(include/version.h.in include/version.h)
 
 # If on Unix, we need to link with the math library
 if(UNIX)
-	set(MATH_LIBRARY -lm)
+	set(MATH_LIBRARY m)
 else()
 	set(MATH_LIBRARY)
 endif()
