@@ -21,8 +21,15 @@ if(NOT CMAKE_BUILD_TYPE)
 	set(CMAKE_BUILD_TYPE Release)
 endif()
 
-# C99 and compiler warnings
-add_definitions("-std=c99 -Wall")
+# C99 and compiler warnings, if GCC or Clang
+if(CMAKE_C_COMPILER_ID MATCHES "GNU" OR
+   CMAKE_C_COMPILER_ID MATCHES "Clang")
+	add_definitions("-std=c99 -Wall")
+else()
+	message(WARNING "-- Not using GCC or Clang.  Build may not be "
+	        "configured correctly for C99 and warnings.  You may want to "
+	        "consider editing compiler flags manually.")
+endif()
 
 # Generate parameters and version headers
 configure_file(include/params.h.in include/params.h)
