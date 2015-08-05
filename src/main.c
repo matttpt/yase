@@ -167,7 +167,7 @@ int main(int argc, char * argv[])
 	/* Run the sieve for seeds */
 	puts("Finding sieving primes . . .");
 	sieve_seed(seed_end_byte, seed_end_bit, &count, &set);
-	
+
 	/* Run the sieve for each segment */
 	percent = 0;
 	printf("Sieving . . . %u%%", 0);

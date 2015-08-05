@@ -83,6 +83,44 @@ static unsigned long find_lists_needed(uint64_t end)
 	return lists_needed;
 }
 
+/* Adjusts a prime's information so that the next multiple to be sieved
+   is above a given byte */
+static void adjust_up(uint64_t prime, uint64_t start,
+                      uint64_t * next_byte, uint32_t * wheel_idx)
+{
+	uint64_t divisor;
+	unsigned int div_mod, new_wheel_idx;
+
+	/* Find starting divisor */
+	divisor = (start * 30) / prime;
+	if((start * 30) % prime != 0)
+	{
+		divisor++;
+	}
+
+	/* Find the next value for divisor that is on the wheel being used
+	   to sieve the prime's multiples */
+	if(prime < SMALL_THRESHOLD)
+	{
+		div_mod = divisor % 30;
+		new_wheel_idx = wheel30_find_idx[div_mod];
+		divisor -= div_mod;
+		divisor += wheel30_offs[new_wheel_idx];
+		*wheel_idx = wheel30_last_idx[prime % 30] * 8 + new_wheel_idx;
+	}
+	else
+	{
+		div_mod = divisor % 210;
+		new_wheel_idx = wheel210_find_idx[div_mod];
+		divisor -= div_mod;
+		divisor += wheel210_offs[new_wheel_idx];
+		*wheel_idx = wheel30_last_idx[prime % 30] * 48 + new_wheel_idx;
+	}
+
+	/* Calculate next byte */
+	*next_byte = (prime * divisor) / 30;
+}
+
 /* Allocates and initializes an empty set of sieving primes, for use
    with the interval [start, end) */
 void prime_set_init(
@@ -140,9 +178,7 @@ void prime_set_add(struct prime_set * set,
 	/* Put the prime into the interval if necessary */
 	if(next_byte < set->start)
 	{
-		/* TODO - recalculate the prime's multiple to fit in the
-		   segment.  This currently cannot happen. */
-		abort();
+		adjust_up(prime, set->start, &next_byte, &wheel_idx);
 	}
 
 	/* Add prime to appropriate list */
@@ -164,12 +200,15 @@ void prime_set_add(struct prime_set * set,
 		/* Adjust the next byte */
 		next_byte -= set->start;
 
-		/* If the prime's next segment is the first, place it in that
-		   list.  Otherwise, place it in the inactive list. */
-		if(next_byte / SEGMENT_BYTES == 0)
+		/* If the prime's next segment is the active range, place it in
+		   an active list.  Otherwise, place it in the inactive list. */
+		if(next_byte / SEGMENT_BYTES < set->lists_alloc)
 		{
-			prime_set_list_append(set, &set->lists[0], prime_adj,
-			                      next_byte, wheel_idx);
+			prime_set_list_append(set,
+			                      &set->lists[next_byte / SEGMENT_BYTES],
+			                      prime_adj,
+			                      next_byte % SEGMENT_BYTES,
+			                      wheel_idx);
 		}
 		else if(set->inactive_end == NULL ||
 		        !bucket_append(set->inactive_end, prime_adj, next_byte,

@@ -75,17 +75,19 @@ struct wheel_elem
 	int8_t  next;    /* Offset to next wheel_elem */
 };
 
-/* Exposed wheel tables.  Even though "wheel30", "wheel210" and
-   "wheel210_last_idx" are not const (so that wheel_init(void) can
-   generate them), obviously don't modify them. */
+/* Exposed wheel tables.  Even though "wheel30", "wheel210",
+   "wheel210_last_idx" and "wheel210_find_idx" are not const (so that
+   wheel_init(void) can generate them), obviously don't modify them. */
 extern struct wheel_elem wheel30[64];
 extern const uint8_t     wheel30_offs[8];
 extern const uint8_t     wheel30_deltas[8];
 extern const uint8_t     wheel30_last_idx[30];
+extern const uint8_t     wheel30_find_idx[30];
 extern struct wheel_elem wheel210[384];
 extern const uint8_t     wheel210_offs[48];
 extern const uint8_t     wheel210_deltas[48];
 extern uint8_t           wheel210_last_idx[210];
+extern uint8_t           wheel210_find_idx[210];
 
 /* Wheel initialization routine */
 void wheel_init(void);

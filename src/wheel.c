@@ -34,6 +34,10 @@ const uint8_t wheel30_last_idx[30] =
 	{ 0, 0, 0, 0, 0, 0, 0, 1, 1, 1,
 	  1, 2, 2, 3, 3, 3, 3, 4, 4, 5,
 	  5, 5, 5, 6, 6, 6, 6, 6, 6, 7 };
+const uint8_t wheel30_find_idx[30] =
+	{ 0, 0, 1, 1, 1, 1, 1, 1, 2, 2,
+	  2, 2, 3, 3, 4, 4, 4, 4, 5, 5,
+	  6, 6, 6, 6, 7, 7, 7, 7, 7, 7 };
 
 /* mod 210 wheel data */
 struct wheel_elem wheel210[384];
@@ -50,6 +54,7 @@ const uint8_t wheel210_deltas[48] =
 	   2,  4,  8,  6,  4,  6,  2,  4,  6,  2,  6,  6,
 	   4,  2,  4,  6,  2,  6,  4,  2,  4,  2, 10,  2 };
 uint8_t wheel210_last_idx[210];
+uint8_t wheel210_find_idx[210];
 
 /* Routine to construct the wheel tables - mod 30 */
 static void wheel30_init(void)
@@ -99,19 +104,31 @@ static void wheel30_init(void)
 /* Routine to construct the wheel tables - mod 210 */
 static void wheel210_init(void)
 {
-	unsigned int i, j, last_idx;
+	unsigned int i, j, idx;
 
 	/* Setup wheel210_last_idx */
-	j        = 0;
-	last_idx = 0;
+	j   = 0;
+	idx = 0;
 	for(i = 0; i < 210; i++)
 	{
 		if(wheel210_offs[j] == i)
 		{
-			last_idx = j;
+			idx = j;
 			j++;
 		}
-		wheel210_last_idx[i] = (uint8_t) last_idx;
+		wheel210_last_idx[i] = (uint8_t) idx;
+	}
+
+	/* Setup wheel210_find_idx */
+	j   = 0;
+	idx = 0;
+	for(i = 0; i < 210; i++)
+	{
+		wheel210_find_idx[i] = (uint8_t) idx;
+		if(wheel210_offs[j] == i)
+		{
+			idx = ++j;
+		}
 	}
 
 	/* Setup the wheel table.  Each cycle of 48 is for one initial
