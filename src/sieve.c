@@ -262,6 +262,7 @@ static inline void process_large_primes(
    If end_bit == 0, the entire final byte checked is needed. */
 void sieve_segment(
 		uint64_t start,
+		unsigned int start_bit,
 		uint64_t end,
 		unsigned int end_bit,
 		struct prime_set * set,
@@ -283,7 +284,12 @@ void sieve_segment(
 		seg_count += popcnt[sieve[i]];
 	}
 
-	/* Prune any extra bits we didn't need in the last byte */
+	/* Prune any extra bits we didn't need in the first or last byte */
+	if(start_bit != 0)
+	{
+		uint8_t mask = (uint8_t) (0xFF << start_bit);
+		seg_count -= popcnt[sieve[0] | mask];
+	}
 	if(end_bit != 0)
 	{
 		uint8_t mask = (uint8_t) ~(0xFF << end_bit);

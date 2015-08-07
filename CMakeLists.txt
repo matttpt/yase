@@ -50,6 +50,7 @@ include_directories(${CMAKE_BINARY_DIR}/include)
 set(SOURCES
 	src/args.c
 	src/expr.c
+	src/interval.c
 	src/main.c
 	src/popcnt.c
 	src/presieve.c

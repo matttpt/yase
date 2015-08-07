@@ -63,9 +63,9 @@ static const char * help_format =
  */
 int main(int argc, char * argv[])
 {
-	uint64_t next_byte, end_byte, seed_end_byte, seed_end_bit, max,
-	         seed_max, count;
-	unsigned int percent;
+	uint64_t seed_end_byte, max, count;
+	unsigned int seed_end_bit;
+	struct interval inter;
 	double start, elapsed;
 	struct prime_set set;
 	enum args_action action;
@@ -125,101 +125,22 @@ int main(int argc, char * argv[])
 	puts("Initializing pre-sieve . . .");
 	presieve_init();
 
-	/*
-	 * Calculate the end byte (the first byte that is not touched).
-	 * This expression is essentially a variation on the idea that to
-	 * find p/q rounding up, you can round down (p+q-1)/q.  28 is used
-	 * instead of 29 because the first bit in each byte is 30k+1.  Thus,
-	 * 30k should still round down.  Try it with a few numbers--you'll
-	 * see that it works.
-	 */
-	end_byte = ((max + 1) + 28) / 30;
+	/* Calculate start and end values */
+	calculate_interval(0, max, &inter);
 
-	/*
-	 * Calculate the max value to check when finding sieving primes.
-	 * This is the largest value such that value * value <= max.
-	 */
-	seed_max = (uint64_t) sqrt((double) max);
-
-	/* Find the end byte (the first byte that is not touched) for the
-	   seed sieve, using the same expression as above */
-	seed_end_byte = ((seed_max + 1) + 28) / 30;
-
-	/* Find the first bit that we do not need to check for the seed
-	   sieve */
-	if(seed_max % 30 == 0)
-	{
-		seed_end_bit = seed_end_byte * 8;
-	}
-	else
-	{
-		seed_end_bit = (seed_end_byte - 1) * 8;
-		seed_end_bit += wheel30_last_idx[seed_max % 30] + 1;
-	}
-
-	/* The next byte = seed_end_byte */
-	next_byte = seed_end_byte;
+	/* Calculate seed start and end values */
+	calculate_seed_interval(max, &seed_end_byte, &seed_end_bit);
 
 	/* Initialize prime set */
 	puts("Initializing sieving prime set . . .");
-	prime_set_init(&set, next_byte, end_byte);
+	prime_set_init(&set, &inter);
 
 	/* Run the sieve for seeds */
 	puts("Finding sieving primes . . .");
-	sieve_seed(seed_end_byte, seed_end_bit, &count, &set);
+	sieve_seed(seed_end_byte, seed_end_bit, &set);
 
-	/* Run the sieve for each segment */
-	percent = 0;
-	printf("Sieving . . . %u%%", 0);
-	fflush(stdout);
-	while(next_byte < end_byte)
-	{
-		/*
-		 * A note about the logic here:
-		 *  - seg_end_byte = first byte not to process (upper bound)
-		 *  - seg_end_bit  = first bit in the last byte processed
-		 *                   (seg_end_byte - 1) not to process.  If set
-		 *                   to 0, the whole final bit should be used.
-		 */
-		uint64_t seg_end_byte = next_byte + SEGMENT_BYTES;
-		unsigned int seg_end_bit = 0;
-		unsigned int new_percent;
-
-		/* If segment is longer than necessary, trim it */
-		if(seg_end_byte > end_byte)
-		{ 
-			seg_end_byte = end_byte;
-
-			/* If max is a multiple of 30, we don't need to prune any
-			   extra bits, so leave seg_end_bit = 0.  Otherwise, find
-			   the end bit (first bit to be thrown out). */
-			if(max % 30 != 0)
-			{
-				seg_end_bit = (wheel30_last_idx[max % 30] + 1) % 8;
-			}
-		}
-
-		/* Run the sieve on the segment */
-		sieve_segment(next_byte,
-		              seg_end_byte,
-		              seg_end_bit,
-		              &set,
-		              &count);
-
-		/* Move forward */
-		next_byte = seg_end_byte;
-		prime_set_advance(&set);
-
-		/* Update the progress counter if the percentage has changed */
-		new_percent = (unsigned int) (next_byte * 100 / end_byte);
-		if(new_percent != percent)
-		{
-			percent = new_percent;
-			printf("\rSieving . . . %u%%", percent);
-			fflush(stdout);
-		}
-	}
-	putchar('\n');
+	/* Run the main sieve */
+	sieve_interval(&inter, &set, &count);
 
 	/* Perform cleanup (freeing dynamically-allocated memory) */
 	puts("Cleaning up . . .");

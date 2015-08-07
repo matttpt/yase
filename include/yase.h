@@ -115,6 +115,31 @@ void popcnt_init(void);
 /* We need to declare this for sieve_seed() and sieve_segment() */
 struct prime_set;
 
+/*
+ * This structure describes a sieving interval.  start_byte and end_byte
+ * are the first byte checked and first byte not checked, respectively.
+ * start_bit is the first bit of start_byte checked.  end_bit is the
+ * first byte of (end_byte - 1) not checked, or 0 if the entire last
+ * byte must be checked.
+ */
+struct interval
+{
+	uint64_t start_byte;
+	uint64_t end_byte;
+	unsigned int start_bit;
+	unsigned int end_bit;
+};
+
+/* These calculate the bit/byte intervals needed for sieving */
+void calculate_seed_interval(
+		uint64_t max,
+		uint64_t * seed_end_byte,
+		unsigned int * seed_end_bit);
+void calculate_interval(
+		uint64_t start,
+		uint64_t max,
+		struct interval * inter);
+
 /* Structure to hold information about a sieving prime, and which
    multiple needs to be marked next */
 struct prime
@@ -127,15 +152,21 @@ struct prime
 /* Finds the sieving primes */
 void sieve_seed(
 		uint64_t end_byte,
-		uint64_t end_bit,
-		uint64_t * count,
+		unsigned int end_bit,
 		struct prime_set * set);
 
 /* Sieves a segment */
 void sieve_segment(
 		uint64_t start,
+		unsigned int start_bit,
 		uint64_t end,
 		unsigned int end_bit,
+		struct prime_set * set,
+		uint64_t * count);
+
+/* Sieves an interval */
+void sieve_interval(
+		const struct interval * inter,
 		struct prime_set * set,
 		uint64_t * count);
 
@@ -208,8 +239,7 @@ struct prime_set
 /* Initializes a set of primes */
 void prime_set_init(
 		struct prime_set * set,
-		uint64_t start,
-		uint64_t end);
+		const struct interval * inter);
 
 /* Adds a sieving prime to a prime set */
 void prime_set_add(struct prime_set * set,

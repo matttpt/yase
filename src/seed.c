@@ -37,12 +37,21 @@
  */
 void sieve_seed(
 		uint64_t end_byte,
-		uint64_t end_bit,
-		uint64_t * count,
+		unsigned int end_bit,
 		struct prime_set * set)
 {
-	uint64_t i;
+	uint64_t i, end_bit_absolute;
 	uint8_t * seed_sieve;
+
+	/* Calculate the absolute end bit */
+	if(end_bit != 0)
+	{
+		end_bit_absolute = (end_byte - 1) * 8 + end_bit;
+	}
+	else
+	{
+		end_bit_absolute = end_byte * 8;
+	}
 
 	/* We don't bother to segment for this process.  We allocate the
 	   sieve segment manually. */
@@ -64,43 +73,35 @@ void sieve_seed(
 			uint64_t prime, mult, byte;
 			uint32_t prime_adj, wheel_idx;
 
-			/* Count the prime */
-			(*count)++;
-
 			/* Mark multiples */
 			prime     = (i / 8) * 30 + wheel30_offs[i % 8];
 			mult      = prime * prime;
 			prime_adj = (uint32_t) (prime / 30);
 			byte      = mult / 30;
 
-			/* If the prime is under the "small threshold," its
-			   multiples are marked with a mod 30 wheel.  Otherwise, it
-			   is sieved with a mod 210 wheel. */
-			if(prime < SMALL_THRESHOLD)
-			{
-				wheel_idx = (i % 8) * 9;
-				while(byte < end_byte)
-				{
-					mark_multiple_30(seed_sieve, prime_adj,
-					                 (uint32_t *) &byte, &wheel_idx);
-				}
-			}
-			else
-			{
-				wheel_idx = (i % 8) * 48 + wheel210_last_idx[prime % 210];
-				while(byte < end_byte)
-				{
-					mark_multiple_210(seed_sieve, prime_adj,
-					                  (uint32_t *) &byte, &wheel_idx);
-				}
-			}
-
 			/* If this prime is in the range that we need sieving primes,
 			   record it. */
-			if(i < end_bit)
+			if(i < end_bit_absolute)
 			{
-				/* Submit to the prime set */
+				if(prime < SMALL_THRESHOLD)
+				{
+					wheel_idx = (i % 8) * 9;
+				}
+				else
+				{
+					wheel_idx = (i % 8) * 48 +
+					            wheel210_last_idx[prime % 210];
+				}
 				prime_set_add(set, prime, byte, wheel_idx);
+			}
+
+			/* Sieve multiples for the purpose of finding more sieving
+			   primes */
+			wheel_idx = (i % 8) * 48 + wheel210_last_idx[prime % 210];
+			while(byte < end_byte)
+			{
+				mark_multiple_210(seed_sieve, prime_adj,
+				                  (uint32_t *) &byte, &wheel_idx);
 			}
 		}
 	}

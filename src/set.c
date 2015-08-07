@@ -125,18 +125,18 @@ static void adjust_up(uint64_t prime, uint64_t start,
    with the interval [start, end) */
 void prime_set_init(
 		struct prime_set * set,
-		uint64_t start,
-		uint64_t end)
+		const struct interval * inter)
 {
 	uint64_t n_segs;
 	unsigned long lists_alloc;
 
 	/* Determine how many segments there are */
-	n_segs = (end - start + SEGMENT_BYTES - 1) / SEGMENT_BYTES;
+	n_segs = (inter->end_byte - inter->start_byte + SEGMENT_BYTES - 1) /
+	         SEGMENT_BYTES;
 
 	/* Allocate the list head pointers - as many as will be needed at
 	   one time */
-	lists_alloc = find_lists_needed(end);
+	lists_alloc = find_lists_needed(inter->end_byte);
 	set->lists = calloc(lists_alloc, sizeof(struct bucket *));
 	if(set->lists == NULL)
 	{
@@ -146,8 +146,8 @@ void prime_set_init(
 	set->lists_alloc = lists_alloc;
 
 	/* Set up set metadata */
-	set->start       = start;
-	set->end         = end;
+	set->start       = inter->start_byte;
+	set->end         = inter->end_byte;
 	set->end_segment = n_segs;
 	set->current     = 0;
 
