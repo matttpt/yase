@@ -199,6 +199,7 @@ enum args_action
 enum args_action process_args(
 		int argc,
 		char * argv[],
+		uint64_t * min,
 		uint64_t * max);
 
 /**********************************************************************\

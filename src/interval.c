@@ -146,7 +146,9 @@ void sieve_interval(
 		prime_set_advance(set);
 
 		/* Update the progress counter if the percentage has changed */
-		new_percent = (unsigned int) (next_byte * 100 / inter->end_byte);
+		new_percent = (unsigned int)
+		              ((next_byte - inter->start_byte) * 100 /
+		               (inter->end_byte - inter->start_byte));
 		if(new_percent != percent)
 		{
 			percent = new_percent;

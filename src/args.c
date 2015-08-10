@@ -35,6 +35,7 @@
 enum args_action process_args(
 		int argc,
 		char * argv[],
+		uint64_t * min,
 		uint64_t * max)
 {
 	int i;
@@ -55,27 +56,51 @@ enum args_action process_args(
 	}
 
 	/* No version or help flags.  Proceed as usual, checking that we
-	   only have one real argument (the maximum value to sieve to). */
-	if(argc != 2)
+	   only have one or two real arguments. */
+	if(argc != 2 && argc != 3)
 	{
-		fprintf(stderr, "%s: invalid arguments (expected 1, got %d)\n",
-		        yase_program_name, argc - 1);
+		fprintf(stderr, "%s: invalid arguments (expected 1 or 2, got "
+		        "%d)\n", yase_program_name, argc - 1);
 		return ACTION_FAIL;
 	}
 
-	/* Get the range from the first argument */
-	if(!evaluate(argv[1], max))
+	/* Get the minimum and maximum values */
+	if(argc == 3)
 	{
-		fprintf(stderr, "%s: failed to evaluate maximum value\n",
-		        yase_program_name);
-		return ACTION_FAIL;
+		/* Get the minimum from the first argument */
+		if(!evaluate(argv[1], min))
+		{
+			fprintf(stderr, "%s: failed to evaluate minimum value\n",
+			        yase_program_name);
+			return ACTION_FAIL;
+		}
+
+		/* Get the minimum from the second argument */
+		if(!evaluate(argv[2], max))
+		{
+			fprintf(stderr, "%s: failed to evaluate maximum value\n",
+			        yase_program_name);
+			return ACTION_FAIL;
+		}
+	}
+	else
+	{
+		/* Only the maximum is provided.  Assume the minimum is 0. */
+		*min = 0;
+
+		/* Get the maximum from the first argument */
+		if(!evaluate(argv[1], max))
+		{
+			fprintf(stderr, "%s: failed to evaluate maximum value\n",
+			        yase_program_name);
+			return ACTION_FAIL;
+		}
 	}
 
-	/* Things break if we are asked to sieve less than one byte's worth
-	   of a range.  Thus, max >= 30. */
-	if(*max < 30)
+	/* Ensure that max >= min */
+	if(*max < *min)
 	{
-		fprintf(stderr, "%s: maximum number to check must be >= 30\n",
+		fprintf(stderr, "%s: minimum is greater than maximum\n",
 		        yase_program_name);
 		return ACTION_FAIL;
 	}

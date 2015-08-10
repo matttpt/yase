@@ -35,35 +35,35 @@ const char * yase_program_name;
 
 /* Help format string */
 static const char * help_format =
-"Usage: %s [OPTION]... MAX\n"
-"Count and display the number of primes on the interval [0,MAX].  MAX may\n"
-"be an expression, e.g. 2^32-1.  Supported operations are addition (+),\n"
-"subtraction (-), multiplication (*), and exponentiation  (** or ^).\n\n"
+"Usage: %s [OPTION]... [MIN] MAX\n"
+"Count and display the number of primes on the interval [MIN,MAX].  MIN\n"
+"and MAX be expressions, e.g. 2^32-1.  Supported operations are addition\n"
+"(+), subtraction (-), multiplication (*), and exponentiation (** or ^).\n"
+"If MIN is not provided, it is assumed to be 0.\n\n"
 "Options:\n"
 " --help      display this help meessage\n"
 " --version   display version information\n";
+
+/* Table of pi(x) values for x < 30 */
+static unsigned int pi_under_30[30] =
+{
+	0, 0, 1, 2, 2, 3, 3, 4, 4, 4,
+	4, 5, 5, 6, 6, 6, 6, 7, 7, 8,
+	8, 8, 8, 9, 9, 9, 9, 9, 9, 10
+};
 
 /*
  * Main routine!
  *
  * Essentially, the strategy here is this:
- *  - Interpret the arguments to find the maximum value to check
- *  - Find the sieving primes (sieve_seed()).  This does not stop
- *    mid-byte in the sieve, but continues until the end of the byte
- *    containing the last bit needed to be checked to find sieving
- *    primes.  The sieving primes are stored in a prime set.
- *  - Sieve the rest.  This picks up with the next byte written above
- *    and continues to the last byte needed to be checked overall.  The
- *    first unneeded bit of the last byte is calculated and sent so that
- *    the possible leftover bits can be "pruned out."
- *
- * The important thing to note is that each sieve call deals in ranges
- * rounded to the byte.  It seems to be much simpler to do this and then
- * make adjustments to bit-granularity later.
+ *  - Interpret the arguments to find the range of values to check.
+ *  - Find the sieving primes (sieve_seed()).  The sieving primes are
+ *    stored in a prime set.
+ *  - Sieve the requested interval (sieve_interval()).
  */
 int main(int argc, char * argv[])
 {
-	uint64_t seed_end_byte, max, count;
+	uint64_t seed_end_byte, min, max, count;
 	unsigned int seed_end_bit;
 	struct interval inter;
 	double start, elapsed;
@@ -74,7 +74,7 @@ int main(int argc, char * argv[])
 	yase_program_name = argv[0];
 
 	/* Process arguments */
-	action = process_args(argc, argv, &max);
+	action = process_args(argc, argv, &min, &max);
 
 	/* Act according to the arguments passed */
 	switch(action)
@@ -103,12 +103,36 @@ int main(int argc, char * argv[])
 	}
 
 	/* Initialization message */
-	printf("yase %u.%u.%u starting, checking numbers <= %" PRIu64 "\n",
-	       VERSION_MAJOR, VERSION_MINOR, VERSION_PATCH, max);
+	printf("yase %u.%u.%u starting, checking numbers on "
+	       "[%" PRIu64 ", %" PRIu64"]\n",
+	       VERSION_MAJOR, VERSION_MINOR, VERSION_PATCH, min, max);
+
+	/* If the maximum is under 30, we handle calculations via table */
+	if(max < 30)
+	{
+		count = pi_under_30[max];
+		if(min != 0)
+		{
+			count -= pi_under_30[min - 1];
+		}
+		printf("Found %" PRIu64 " primes (via pi(x) table).\n", count);
+		return EXIT_SUCCESS;
+	}
 
 	/* The sieving skips over all of the wheel primes and the pre-sieved
 	   primes, so account for them manually */
-	count = WHEEL_PRIMES_SKIPPED + PRESIEVE_PRIMES;
+	if(min < 30)
+	{
+		count = WHEEL_PRIMES_SKIPPED + PRESIEVE_PRIMES;
+		if(min != 0)
+		{
+			count -= pi_under_30[min - 1];
+		}
+	}
+	else
+	{
+		count = 0;
+	}
 
 	/* Initialize wheel table */
 	puts("Initializing wheel table . . .");
@@ -126,7 +150,7 @@ int main(int argc, char * argv[])
 	presieve_init();
 
 	/* Calculate start and end values */
-	calculate_interval(0, max, &inter);
+	calculate_interval(min, max, &inter);
 
 	/* Calculate seed start and end values */
 	calculate_seed_interval(max, &seed_end_byte, &seed_end_bit);
