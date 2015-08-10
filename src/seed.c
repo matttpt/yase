@@ -78,6 +78,7 @@ void sieve_seed(
 			mult      = prime * prime;
 			prime_adj = (uint32_t) (prime / 30);
 			byte      = mult / 30;
+			wheel_idx = (i % 8) * 48 + wheel210_last_idx[prime % 210];
 
 			/* If this prime is in the range that we need sieving primes,
 			   record it. */
@@ -85,19 +86,16 @@ void sieve_seed(
 			{
 				if(prime < SMALL_THRESHOLD)
 				{
-					wheel_idx = (i % 8) * 9;
+					prime_set_add(set, prime, byte, (i % 8) * 9);
 				}
 				else
 				{
-					wheel_idx = (i % 8) * 48 +
-					            wheel210_last_idx[prime % 210];
+					prime_set_add(set, prime, byte, wheel_idx);
 				}
-				prime_set_add(set, prime, byte, wheel_idx);
 			}
 
 			/* Sieve multiples for the purpose of finding more sieving
 			   primes */
-			wheel_idx = (i % 8) * 48 + wheel210_last_idx[prime % 210];
 			while(byte < end_byte)
 			{
 				mark_multiple_210(seed_sieve, prime_adj,
