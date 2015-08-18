@@ -56,7 +56,7 @@ void calculate_seed_interval(
 	}
 	else
 	{
-		*seed_end_bit += wheel30_last_idx[seed_max % 30] + 1;
+		*seed_end_bit = wheel30_last_idx[seed_max % 30] + 1;
 	}
 }
 
