@@ -24,12 +24,12 @@ L1 data cache size), this gives a total range of 983,040 numbers checked
 per segment sieved.
 
 Many of the ideas in this program are taken from other prime-sieving
-programs, especially [primesieve] (http://primesieve.org/).  The ideas
+programs, especially [primesieve](http://primesieve.org/).  The ideas
 of sorting large sieving primes and bucket storage come from Tomás
 Oliveira e Silva.  These ideas are described at his web page
-[here] (http://sweet.ua.pt/tos/software/prime_sieve.html).
+[here](http://sweet.ua.pt/tos/software/prime_sieve.html).
 
-yase is built using [CMake] (http://www.cmake.org/).  Before you build,
+yase is built using [CMake](http://www.cmake.org/).  Before you build,
 copy `config.cmake.default` to `config.cmake` and make any edits you
 desire.  Each configuration item in `config.cmake.default` is documented
 in-line and set to a reasonable default value.  After you finish, run
