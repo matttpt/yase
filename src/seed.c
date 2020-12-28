@@ -68,7 +68,7 @@ void sieve_seed(
 	/* Run the sieve */
 	for(i = PRESIEVE_PRIMES + 2; i < end_byte * 8; i++)
 	{
-		if((seed_sieve[i / 8] & ((uint8_t) 1U << (i % 8))) == 0)
+		if((seed_sieve[i / 8] & ((uint8_t) 1U << (i % 8))) != 0)
 		{
 			uint64_t prime, mult, byte;
 			uint32_t prime_adj, wheel_idx;

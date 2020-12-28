@@ -97,10 +97,7 @@ void wheel_init(void);
 \**********************************************************************/
 
 /*
- * Take heed, this population count table is actually the number of
- * *unset* bits, because primes are unset.  You've been warned.
- *
- * Just like the "wheel" table above, "popcnt" is not const but
+ * Just like the "wheel" table above, "popcnt" is not const, but
  * obviously don't modify it!
  */
 extern uint8_t popcnt[256];
@@ -267,7 +264,7 @@ static inline void mark_multiple_30(
 		uint32_t * byte,
 		uint32_t * wheel_idx)
 {
-	sieve[*byte] |= wheel30[*wheel_idx].mask;
+	sieve[*byte] &= wheel30[*wheel_idx].mask;
 	*byte += wheel30[*wheel_idx].delta_f * prime_adj;
 	*byte += wheel30[*wheel_idx].delta_c;
 	*wheel_idx += wheel30[*wheel_idx].next;
@@ -281,7 +278,7 @@ static inline void mark_multiple_210(
 		uint32_t * byte,
 		uint32_t * wheel_idx)
 {
-	sieve[*byte] |= wheel210[*wheel_idx].mask;
+	sieve[*byte] &= wheel210[*wheel_idx].mask;
 	*byte += wheel210[*wheel_idx].delta_f * prime_adj;
 	*byte += wheel210[*wheel_idx].delta_c;
 	*wheel_idx += wheel210[*wheel_idx].next;

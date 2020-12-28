@@ -26,8 +26,7 @@
 
 #include <yase.h>
 
-/* Population count table - be aware, this counts the unset bits, not the
-   set bits, perhaps counterintuitively. */
+/* Population count table */
 uint8_t popcnt[256];
 
 /* Initializes the population count table */
@@ -36,15 +35,15 @@ void popcnt_init(void)
 	unsigned int i;
 	for(i = 0; i < 256; i++)
 	{
-		uint8_t unset_count = 0;
+		uint8_t set_count = 0;
 		unsigned int mask;
 		for(mask = 1; mask < 256; mask <<= 1)
 		{
-			if((i & (uint8_t) mask) == 0)
+			if((i & (uint8_t) mask) != 0)
 			{
-				unset_count++;
+				set_count++;
 			}
 		}
-		popcnt[i] = unset_count;
+		popcnt[i] = set_count;
 	}
 }

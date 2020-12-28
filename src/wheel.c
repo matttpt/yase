@@ -84,9 +84,9 @@ static void wheel30_init(void)
 				  ((offs_p * (offs_f + delta)) / 30)
 				- ((offs_p * offs_f)           / 30);
 
-			/* Record the bitmask to set the appropriate bit */
+			/* Record the bitmask to unset the appropriate bit */
 			bit_offs = wheel30_last_idx[(offs_p * offs_f) % 30];
-			wheel30[i * 8 + j].mask = (uint8_t) (1U << bit_offs);
+			wheel30[i * 8 + j].mask = (uint8_t) ~(1U << bit_offs);
 
 			/* Record the delta to the next table element */
 			if(j == 7)
@@ -154,9 +154,9 @@ static void wheel210_init(void)
 				  ((offs_p * (offs_f + delta)) / 30)
 				- ((offs_p * offs_f)           / 30);
 
-			/* Record the bitmask to set the appropriate bit */
+			/* Record the bitmask to unset the appropriate bit */
 			bit_offs = wheel30_last_idx[(offs_p * offs_f) % 30];
-			wheel210[i * 48 + j].mask = (uint8_t) (1U << bit_offs);
+			wheel210[i * 48 + j].mask = (uint8_t) ~(1U << bit_offs);
 
 			/* Record the delta to the next table element */
 			if(j == 47)

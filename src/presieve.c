@@ -61,7 +61,7 @@ void presieve_init(void)
 	}
 
 	/* Prepare to sieve */
-	memset(presieve, 0, len);
+	memset(presieve, 0xFF, len);
 
 	/*
 	 * Before we do the "requested" pre-sieve, we also pre-sieve 7.

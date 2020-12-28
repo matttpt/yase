@@ -72,9 +72,9 @@ static uint8_t sieve[SEGMENT_BYTES];
 /* Turns wheel offsets into bitmasks for marking multiples.  Only the
    non-zero entries will actually be needed. */
 static const uint8_t offs_to_mask[30] =
-	{ 0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0x00, 0x00,
-	  0x00, 0x04, 0x00, 0x08, 0x00, 0x00, 0x00, 0x10, 0x00, 0x20,
-	  0x00, 0x00, 0x00, 0x40, 0x00, 0x00, 0x00, 0x00, 0x00, 0x80 };
+	{ 0x00, 0xFE, 0x00, 0x00, 0x00, 0x00, 0x00, 0xFD, 0x00, 0x00,
+	  0x00, 0xFB, 0x00, 0xF7, 0x00, 0x00, 0x00, 0xEF, 0x00, 0xDF,
+	  0x00, 0x00, 0x00, 0xBF, 0x00, 0x00, 0x00, 0x00, 0x00, 0x7F };
 
 /* Macro to calculate the wheel delta correction */
 #define DC(df, i, j) (((i * (j + df)) / 30) - ((i * j) / 30))
@@ -90,7 +90,7 @@ static const uint8_t offs_to_mask[30] =
 		prime->wheel_idx = n;                            \
 		return;                                          \
 	}                                                    \
-	*byte |= MASK(i, j);                                 \
+	*byte &= MASK(i, j);                                 \
 	byte += (adj * df) + DC(df, i, j);
 
 /* Generates the code to handle a cycle of 8. n = the starting wheel
@@ -99,14 +99,14 @@ static const uint8_t offs_to_mask[30] =
 	for(;;) {                                             \
 	case n:                                               \
 		while(byte < lim - adj * 28 - i) {                \
-			byte[                      0] |= MASK(i,  1); \
-			byte[adj * 6  + DC( 6, i, 1)] |= MASK(i,  7); \
-			byte[adj * 10 + DC(10, i, 1)] |= MASK(i, 11); \
-			byte[adj * 12 + DC(12, i, 1)] |= MASK(i, 13); \
-			byte[adj * 16 + DC(16, i, 1)] |= MASK(i, 17); \
-			byte[adj * 18 + DC(18, i, 1)] |= MASK(i, 19); \
-			byte[adj * 22 + DC(22, i, 1)] |= MASK(i, 23); \
-			byte[adj * 28 + DC(28, i, 1)] |= MASK(i, 29); \
+			byte[                      0] &= MASK(i,  1); \
+			byte[adj * 6  + DC( 6, i, 1)] &= MASK(i,  7); \
+			byte[adj * 10 + DC(10, i, 1)] &= MASK(i, 11); \
+			byte[adj * 12 + DC(12, i, 1)] &= MASK(i, 13); \
+			byte[adj * 16 + DC(16, i, 1)] &= MASK(i, 17); \
+			byte[adj * 18 + DC(18, i, 1)] &= MASK(i, 19); \
+			byte[adj * 22 + DC(22, i, 1)] &= MASK(i, 23); \
+			byte[adj * 28 + DC(28, i, 1)] &= MASK(i, 29); \
 			byte += adj * 30 + i;                         \
 		}                                                 \
 	            BUILD_CHECK_AND_MARK(n    , 6, i,  1)     \
@@ -287,13 +287,13 @@ void sieve_segment(
 	/* Prune any extra bits we didn't need in the first or last byte */
 	if(start_bit != 0)
 	{
-		uint8_t mask = (uint8_t) (0xFF << start_bit);
-		seg_count -= popcnt[sieve[0] | mask];
+		uint8_t mask = (uint8_t) ~(0xFFU << start_bit);
+		seg_count -= popcnt[sieve[0] & mask];
 	}
 	if(end_bit != 0)
 	{
-		uint8_t mask = (uint8_t) ~(0xFF << end_bit);
-		seg_count -= popcnt[sieve[end - start - 1] | mask];
+		uint8_t mask = (uint8_t) (0xFFU << end_bit);
+		seg_count -= popcnt[sieve[end - start - 1] & mask];
 	}
 
 	/* Update caller's count of primes */
