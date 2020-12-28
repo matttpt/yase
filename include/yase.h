@@ -96,14 +96,15 @@ void wheel_init(void);
  * Population count                                                   *
 \**********************************************************************/
 
-/*
- * Just like the "wheel" table above, "popcnt" is not const, but
- * obviously don't modify it!
- */
-extern uint8_t popcnt[256];
-
 /* Initializes the population count table */
 void popcnt_init(void);
+
+/* Performs a population count on the provided sieve segment */
+uint64_t popcnt(
+		const uint8_t * sieve,
+		unsigned int start_bit,
+		unsigned long end,
+		unsigned int end_bit);
 
 /**********************************************************************\
  * Sieves                                                             *

@@ -27,7 +27,7 @@
 #include <yase.h>
 
 /* Population count table */
-uint8_t popcnt[256];
+static uint8_t popcnt_lookup[256];
 
 /* Initializes the population count table */
 void popcnt_init(void)
@@ -44,6 +44,38 @@ void popcnt_init(void)
 				set_count++;
 			}
 		}
-		popcnt[i] = set_count;
+		popcnt_lookup[i] = set_count;
 	}
+}
+
+/* Performs a population count on the provided sieve segment. The
+   start_bit and end_bit work the same as in sieve_segment; see the
+   documentation there. */
+uint64_t popcnt(
+		const uint8_t * sieve,
+		unsigned int start_bit,
+		unsigned long end,
+		unsigned int end_bit)
+{
+	unsigned long i;
+	uint64_t count = 0;
+
+	for(i = 0; i < end; i++)
+	{
+		count += popcnt_lookup[sieve[i]];
+	}
+
+	/* Prune any extra bits we didn't need in the first or last byte */
+	if(start_bit != 0)
+	{
+		uint8_t mask = (uint8_t) ~(0xFFU << start_bit);
+		count -= popcnt_lookup[sieve[0] & mask];
+	}
+	if(end_bit != 0)
+	{
+		uint8_t mask = (uint8_t) (0xFFU << end_bit);
+		count -= popcnt_lookup[sieve[end - 1] & mask];
+	}
+
+	return count;
 }

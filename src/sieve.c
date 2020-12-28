@@ -268,8 +268,6 @@ void sieve_segment(
 		struct prime_set * set,
 		uint64_t * count)
 {
-	unsigned long i, seg_count;
-
 	/* Copy in pre-sieve data */
 	presieve_copy(sieve, start, end);
 
@@ -278,24 +276,6 @@ void sieve_segment(
 	process_large_primes(set);
 
 	/* Count primes */
-	seg_count = 0;
-	for(i = 0; i < (unsigned long) (end - start); i++)
-	{
-		seg_count += popcnt[sieve[i]];
-	}
-
-	/* Prune any extra bits we didn't need in the first or last byte */
-	if(start_bit != 0)
-	{
-		uint8_t mask = (uint8_t) ~(0xFFU << start_bit);
-		seg_count -= popcnt[sieve[0] & mask];
-	}
-	if(end_bit != 0)
-	{
-		uint8_t mask = (uint8_t) (0xFFU << end_bit);
-		seg_count -= popcnt[sieve[end - start - 1] & mask];
-	}
-
-	/* Update caller's count of primes */
-	(*count) += seg_count;
+	(*count) += popcnt(sieve, start_bit, (unsigned long) (end - start),
+	                   end_bit);
 }
