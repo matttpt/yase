@@ -138,8 +138,8 @@ int main(int argc, char * argv[])
 	puts("Initializing wheel table . . .");
 	wheel_init();
 
-	/* Initialize popcnt table */
-	puts("Initializing population count table . . .");
+	/* Initialize popcnt */
+	puts("Initializing population count . . .");
 	popcnt_init();
 
 	/* Get start CPU time */
