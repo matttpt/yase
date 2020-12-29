@@ -195,24 +195,12 @@ static inline void process_large_prime_bucket(
 		adj2  = p2->prime_adj;
 		wi2   = p2->wheel_idx;
 
-		/* For as long as possible, do both together */
-		while(byte1 < SEGMENT_BYTES && byte2 < SEGMENT_BYTES)
-		{
-			mark_multiple_210(sieve, adj1, &byte1, &wi1);
-			mark_multiple_210(sieve, adj2, &byte2, &wi2);
-		}
-
-		/* Finish first if necessary */
-		while(byte1 < SEGMENT_BYTES)
-		{
-			mark_multiple_210(sieve, adj1, &byte1, &wi1);
-		}
-
-		/* Finish second if necessary */
-		while(byte2 < SEGMENT_BYTES)
-		{
-			mark_multiple_210(sieve, adj2, &byte2, &wi2);
-		}
+		/* Mark multiples. Large primes usually have only one multiple
+		   per segment. If there are more than one, the rest of the
+		   multiples are marked when this routine is called again (see
+		   below). */
+		mark_multiple_210(sieve, adj1, &byte1, &wi1);
+		mark_multiple_210(sieve, adj2, &byte2, &wi2);
 
 		/* Save old two back to the set */
 		prime_set_save(set, adj1, (uint64_t) byte1, wi1);
@@ -229,10 +217,7 @@ static inline void process_large_prime_bucket(
 		byte1 = p1->next_byte;
 		adj1  = p1->prime_adj;
 		wi1   = p1->wheel_idx;
-		while(byte1 < SEGMENT_BYTES)
-		{
-			mark_multiple_210(sieve, adj1, &byte1, &wi1);
-		}
+		mark_multiple_210(sieve, adj1, &byte1, &wi1);
 		prime_set_save(set, adj1, (uint64_t) byte1, wi1);
 	}
 }
@@ -247,13 +232,19 @@ static inline void process_large_primes(
 	/* Fetch the list we need */
 	bucket = set->lists[0];
 
-	/* Process each bucket */
+	/* Process buckets. Doing so may add a few primes back into the list
+	   (because they have more than one multiple in the segment), so we
+	   process again until there are none left. */
 	while(bucket != NULL)
 	{
-		process_large_prime_bucket(set, bucket);
-		to_return = bucket;
-		bucket    = bucket->next;
-		prime_set_bucket_return(set, to_return);
+		set->lists[0] = NULL;
+		do {
+			process_large_prime_bucket(set, bucket);
+			to_return = bucket;
+			bucket    = bucket->next;
+			prime_set_bucket_return(set, to_return);
+		} while(bucket != NULL);
+		bucket = set->lists[0];
 	}
 }
 
