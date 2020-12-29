@@ -35,8 +35,9 @@ set(PRESIEVE_PRIMES 5)
 # optimized sieving loop that is much more efficient when marking
 # multiples of sieving primes with many multiples per segment.  To find
 # this threshold, the value of SEGMENT_BYTES is multipled by this factor.
-# The default is 0.5, which should work well.
-set(SMALL_THRESHOLD_FACTOR 0.5)
+# The default is 2, which should work well; however, you may want to
+# experiment to tune this for your own CPU.
+set(SMALL_THRESHOLD_FACTOR 2)
 
 # When put into storage lists, large sieving primes are stored in
 # "buckets" that contain many primes each.  This controls how many.
