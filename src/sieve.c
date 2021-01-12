@@ -148,17 +148,33 @@ static inline void process_small_prime(
 static inline void process_small_primes(
 		struct prime_set * set)
 {
-	struct bucket * bucket = set->small;
-	while(bucket != NULL)
-	{
-		struct prime * prime = bucket->primes;
-		struct prime * p_end = &bucket->primes[bucket->count];
-		while(prime < p_end)
+	unsigned int i;
+	struct bucket * buckets[64];
+
+	memcpy(buckets, set->small, sizeof(set->small));
+	memset(set->small, 0, sizeof(set->small));
+
+	for(i = 0; i < 64; i++) {
+		struct bucket * bucket = buckets[i];
+		struct bucket * to_return;
+		while(bucket != NULL)
 		{
-			process_small_prime(prime);
-			prime++;
+			struct prime * prime = bucket->primes;
+			struct prime * p_end = &bucket->primes[bucket->count];
+			while(prime < p_end)
+			{
+				process_small_prime(prime);
+				prime_set_list_append(set,
+				                      &set->small[prime->wheel_idx],
+				                      prime->prime_adj,
+				                      prime->next_byte,
+				                      prime->wheel_idx);
+				prime++;
+			}
+			to_return = bucket;
+			bucket = bucket->next;
+			prime_set_bucket_return(set, to_return);
 		}
-		bucket = bucket->next;
 	}
 }
 

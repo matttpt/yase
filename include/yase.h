@@ -227,7 +227,8 @@ struct prime_set
 	uint64_t end_segment;         /* Number of segs. in the interval */
 	uint64_t current;             /* Current segment being sieved    */
 	unsigned long lists_alloc;    /* Number of list ptrs allocated   */
-	struct bucket * small;        /* List of small sieving primes    */
+	struct bucket * small[64];    /* List of small sieving primes,
+	                                 by next wheel_idx               */
 	struct bucket * inactive;     /* List of inactive sieving primes */
 	struct bucket * inactive_end; /* Last node, for fast insertion   */
 	struct bucket * unused;       /* List of unused sieving primes   */
@@ -363,7 +364,7 @@ static inline void prime_set_bucket_return(
 
 /* Saves a processed prime into its next list.  This is only used for
    large sieving primes.  Small sieving primes always remain in the
-   small list. */
+   small lists. */
 static inline void prime_set_save(
 		struct prime_set * set,
 		uint32_t prime_adj,

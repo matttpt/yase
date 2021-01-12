@@ -33,14 +33,14 @@
 /*
  * A prime set uses linked lists of buckets, which can contain up to a
  * fixed number (BUCKET_PRIMES) of sieving primes.  There is a list for
- * every segment to be sieved, a small primes list containing the small
- * sieving primes to be processed specially, a list of inactive primes
- * whose first segment to mark has not yet been reached, and a list of
- * finished primes which no longer have multiples on the interval.  By
- * placing primes into lists associated with the segment of their next
- * multiple, the overhead of having many sieivng primes with no
- * multiples on a segment is greatly reduced.  This idea comes from
- * Tomás Oliveira e Silva.  The algorithm is described at
+ * every segment to be sieved, an array of lists of small sieving primes
+ * (categorized by next wheel_idx) to be processed specially, a list of
+ * inactive primes whose first segment to mark has not yet been reached,
+ * and a list of finished primes which no longer have multiples on the
+ * interval.  By placing primes into lists associated with the segment
+ * of their next multiple, the overhead of having many sieivng primes
+ * with no multiples on a segment is greatly reduced.  This idea comes
+ * from Tomás Oliveira e Silva.  The algorithm is described at
  * http://sweet.ua.pt/tos/software/prime_sieve.html.
  *
  * There are also a bunch of inline prime set/bucket routines in yase.h,
@@ -156,7 +156,7 @@ void prime_set_init(
 	 * avout the regular lists because calloc() zeroes the memory before
 	 * returning the pointer to it.
 	 */
-	set->small        = NULL;
+	memset(set->small, 0, sizeof(set->small));
 	set->inactive     = NULL;
 	set->inactive_end = NULL;
 	set->unused       = NULL;
@@ -185,8 +185,8 @@ void prime_set_add(struct prime_set * set,
 	if(prime < SMALL_THRESHOLD)
 	{
 		next_byte -= set->start;
-		prime_set_list_append(set, &set->small, prime_adj, next_byte,
-		                      wheel_idx);
+		prime_set_list_append(set, &set->small[wheel_idx], prime_adj,
+		                      next_byte, wheel_idx);
 	}
 	else if(next_byte >= set->end)
 	{
@@ -300,16 +300,19 @@ void prime_set_advance(struct prime_set * set)
    pointer table itself */
 void prime_set_cleanup(struct prime_set * set)
 {
-	uint64_t i;
+	unsigned long i;
 	struct bucket * bucket, * to_free;
 
 	/* Clean up small primes list */
-	bucket = set->small;
-	while(bucket != NULL)
+	for(i = 0; i < 64; i++)
 	{
-		to_free = bucket;
-		bucket = bucket->next;
-		free(to_free);
+		bucket = set->small[i];
+		while(bucket != NULL)
+		{
+			to_free = bucket;
+			bucket = bucket->next;
+			free(to_free);
+		}
 	}
 
 	/* Clean up the inactive list */
