@@ -350,12 +350,12 @@ static int tokenize_operator(const char ** expr, struct token ** toks)
 	return 1;
 }
 
-/* Turns an expression into tokens.  The list of tokens is added to the
-   given in toks.  (If the list is empty (i.e. toks == NULL), the first
-   list pointer is updated.  This is what a pointer to a pointer is
-   needed.) */
-static int tokenize(const char * expr, struct token ** toks)
+/* Turns a string into tokens. On success, the toks_out parameter is
+   updated to point to the first token produced. */
+static int tokenize(const char * expr, struct token ** toks_out)
 {
+	struct token * toks = NULL;
+
 	/* Read in tokens based on the first character of each */
 	while(*expr != '\0')
 	{
@@ -368,20 +368,30 @@ static int tokenize(const char * expr, struct token ** toks)
 		}
 		else if(isdigit(*expr))
 		{
-			if(!tokenize_literal(&expr, toks)) return 0;
+			if(!tokenize_literal(&expr, &toks))
+			{
+				free_tokens(toks);
+				return 0;
+			}
 		}
 		else if(*expr == '+' || *expr == '-' ||
 		        *expr == '*' || *expr == '^')
 		{
-			if(!tokenize_operator(&expr, toks)) return 0;
+			if(!tokenize_operator(&expr, &toks))
+			{
+				free_tokens(toks);
+				return 0;
+			}
 		}
 		else
 		{
 			fprintf(stderr, "%s: unexpected '%c'\n",
 			        yase_program_name, (int) *expr);
+			free_tokens(toks);
 			return 0;
 		}
 	}
+	*toks_out = toks;
 	return 1;
 }
 
@@ -392,7 +402,7 @@ static int tokenize(const char * expr, struct token ** toks)
 /* Evaluates a numeric expression */
 int evaluate(const char * expr, uint64_t * result)
 {
-	struct token * toks = NULL;
+	struct token * toks;
 
 	/* Tokenize */
 	if(!tokenize(expr, &toks))
