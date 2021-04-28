@@ -73,7 +73,8 @@ static unsigned long find_lists_needed(uint64_t end)
 
 	/* Now we determine how many segments that delta is, and add one to
 	   ensure that we round up */
-	max_segment_delta = (max_multiple_delta / (SEGMENT_BYTES * 30)) + 1;
+	max_segment_delta =
+		(max_multiple_delta / (LARGE_SEGMENT_BYTES * 30)) + 1;
 
 	/* The above value should reflect how many segments forward we will
 	   ever have to keep track of.  In addition, we will have to keep
@@ -131,8 +132,9 @@ void prime_set_init(
 	unsigned long lists_alloc;
 
 	/* Determine how many segments there are */
-	n_segs = (inter->end_byte - inter->start_byte + SEGMENT_BYTES - 1) /
-	         SEGMENT_BYTES;
+	n_segs =
+		(inter->end_byte - inter->start_byte + LARGE_SEGMENT_BYTES - 1)
+		/ LARGE_SEGMENT_BYTES;
 
 	/* Allocate the list head pointers - as many as will be needed at
 	   one time */
@@ -202,12 +204,12 @@ void prime_set_add(struct prime_set * set,
 
 		/* If the prime's next segment is the active range, place it in
 		   an active list.  Otherwise, place it in the inactive list. */
-		if(next_byte / SEGMENT_BYTES < set->lists_alloc)
+		if(next_byte / LARGE_SEGMENT_BYTES < set->lists_alloc)
 		{
 			prime_set_list_append(set,
-			                      &set->lists[next_byte / SEGMENT_BYTES],
+			                      &set->lists[next_byte / LARGE_SEGMENT_BYTES],
 			                      prime_adj,
-			                      next_byte % SEGMENT_BYTES,
+			                      next_byte % LARGE_SEGMENT_BYTES,
 			                      wheel_idx);
 		}
 		else if(set->inactive_end == NULL ||
@@ -247,7 +249,7 @@ void prime_set_advance(struct prime_set * set)
 	 * contains no primes that must be activated.
 	 */
 	while(set->inactive != NULL &&
-	      set->inactive->primes[0].next_byte / SEGMENT_BYTES
+	      set->inactive->primes[0].next_byte / LARGE_SEGMENT_BYTES
 	          <= set->current)
 	{
 		struct prime * prime, * end;
@@ -260,18 +262,18 @@ void prime_set_advance(struct prime_set * set)
 		/* Unload the portion of the bucket that needs to be
 		   activated */
 		while(prime < end &&
-		      prime->next_byte / SEGMENT_BYTES <= set->current)
+		      prime->next_byte / LARGE_SEGMENT_BYTES <= set->current)
 		{
 			uint64_t next_seg;
 
 			/* Calculate next segment index */
-			next_seg = prime->next_byte / SEGMENT_BYTES;
+			next_seg = prime->next_byte / LARGE_SEGMENT_BYTES;
 			next_seg -= set->current;
 
 			/* Add prime to list */
 			list = &set->lists[next_seg];
 			prime_set_list_append(set, list, prime->prime_adj,
-			                      prime->next_byte % SEGMENT_BYTES,
+			                      prime->next_byte % LARGE_SEGMENT_BYTES,
 			                      prime->wheel_idx);
 			prime++;
 		}

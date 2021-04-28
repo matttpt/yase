@@ -115,7 +115,7 @@ void sieve_interval(
 	fflush(stdout);
 	while(next_byte < inter->end_byte)
 	{
-		uint64_t seg_end_byte = next_byte + SEGMENT_BYTES;
+		uint64_t seg_end_byte = next_byte + LARGE_SEGMENT_BYTES;
 		unsigned int seg_start_bit = 0, seg_end_bit = 0;
 		unsigned int new_percent;
 

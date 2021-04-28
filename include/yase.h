@@ -53,6 +53,14 @@ extern const char * yase_program_name;
 /* Number of primes skipped by the primary sieving wheel (mod 210) */
 #define WHEEL_PRIMES_SKIPPED (4U)
 
+/* How many small segments fit in a large segment */
+#if (LARGE_SEGMENT_BYTES % SMALL_SEGMENT_BYTES) == 0
+#define SMALL_SEGMENTS_PER_LARGE_SEGMENT \
+	(LARGE_SEGMENT_BYTES / SMALL_SEGMENT_BYTES)
+#else
+#error "LARGE_SEGMENT_BYTES must be a multiple of SMALL_SEGMENT_BYTES"
+#endif
+
 /*
  * Threshold below which to use the small prime sieve.  Primes smaller
  * than SMALL_THRESHOLD will be sieved with the small prime sieve, which
@@ -60,7 +68,7 @@ extern const char * yase_program_name;
  * is configured by SMALL_THRESHOLD_FACTOR in config.mk.
  */
 #define SMALL_THRESHOLD \
-	((uint64_t) (SEGMENT_BYTES * SMALL_THRESHOLD_FACTOR))
+	((uint64_t) (SMALL_SEGMENT_BYTES * SMALL_THRESHOLD_FACTOR))
 
 /*
  * This is based HEAVILY off the way that the "primesieve" program
@@ -376,9 +384,9 @@ static inline void prime_set_save(
 
 	/* Figure out the next segment in which this prime will be marked,
 	   and place it in the appropriate list */
-	next_seg = byte / SEGMENT_BYTES;
+	next_seg = byte / LARGE_SEGMENT_BYTES;
 	list = &set->lists[next_seg];
-	byte %= SEGMENT_BYTES;
+	byte %= LARGE_SEGMENT_BYTES;
 	prime_set_list_append(set, list, prime_adj, byte, wheel_idx);
 }
 

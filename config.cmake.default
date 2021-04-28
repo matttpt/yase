@@ -21,8 +21,26 @@ set(CMAKE_BUILD_TYPE Release)
 # NOTE: this flag may not work on compilers other than GCC and Clang.
 add_definitions("-march=native")
 
-# Size of a sieve segment in bytes (default: 32 KB)
-set(SEGMENT_BYTES 32768)
+# Segment sizes used for marking multiples of small sieving primes and
+# large sieving primes, respectively. The large segment size *must* be a
+# multiple of the small segment size, and both *should* be powers of
+# two. (The program logic must divide by these values frequently. When
+# they are powers of two, the compiler can turn these divisions into
+# fast bitwise operations; if not, it must emit slow integer division
+# instructions. If you don't set these to powers of two, you will
+# observe degraded performance.)
+#
+# For best performance, the small segment size should be the size of the
+# CPU's L1 data cache (per core). The large segment size should be based
+# on the size of the CPU's L2 cache (per core), but using the full L2
+# cache might be slower than using only some of it. Trying half the L2
+# cache size (to keep the large segment size a multiple of two) is a good
+# starting point.
+#
+# These defaults assume a 32 KiB L1d cache and a 256 KiB L2 cache, which
+# are pretty common.
+set(SMALL_SEGMENT_BYTES 32768)
+set(LARGE_SEGMENT_BYTES 131072)
 
 # Number of primes to pre-sieve.  You can pick anything from 0 to 6,
 # inclusive.
@@ -34,9 +52,9 @@ set(PRESIEVE_PRIMES 5)
 # Primes smaller than the "small threshold" will be sieved with a highly
 # optimized sieving loop that is much more efficient when marking
 # multiples of sieving primes with many multiples per segment.  To find
-# this threshold, the value of SEGMENT_BYTES is multipled by this factor.
-# The default is 2, which should work well; however, you may want to
-# experiment to tune this for your own CPU.
+# this threshold, the value of SMALL_SEGMENT_BYTES is multipled by this
+# factor. The default is 2, which should work well; however, you may
+# want to experiment to tune this for your own CPU.
 set(SMALL_THRESHOLD_FACTOR 2)
 
 # When put into storage lists, large sieving primes are stored in

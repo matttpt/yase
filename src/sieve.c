@@ -28,7 +28,7 @@
 #include <yase.h>
 
 /* Sieve bit array */
-static uint8_t sieve[SEGMENT_BYTES];
+static uint8_t sieve[LARGE_SEGMENT_BYTES];
 
 /*
  * process_small_prime() marks the multiples of a single small sieving
@@ -122,11 +122,12 @@ static const uint8_t offs_to_mask[30] =
 /* process_small_prime() itself - but all of the real code is in the
    macros */
 static inline void process_small_prime(
+		unsigned int subsegment,
 		struct prime * prime)
 {
 	/* From prime structure */
-	uint8_t * byte = &sieve[prime->next_byte];
-	uint8_t * lim  = &sieve[SEGMENT_BYTES];
+	uint8_t * byte = &sieve[subsegment * SMALL_SEGMENT_BYTES + prime->next_byte];
+	uint8_t * lim  = &sieve[(subsegment + 1) * SMALL_SEGMENT_BYTES];
 	uint32_t  adj  = prime->prime_adj;
 
 	/* Jump to the correct spot */
@@ -144,36 +145,50 @@ static inline void process_small_prime(
 	}
 }
 
+/* Processes a single bucket of small primes */
+static inline void process_small_prime_bucket(
+		unsigned int subsegment,
+		struct bucket * bucket,
+		struct prime_set * set)
+{
+	struct prime * prime = bucket->primes;
+	struct prime * p_end = &bucket->primes[bucket->count];
+	while(prime < p_end)
+	{
+		process_small_prime(subsegment, prime);
+		prime_set_list_append(set,
+		                      &set->small[prime->wheel_idx],
+		                      prime->prime_adj,
+		                      prime->next_byte,
+		                      prime->wheel_idx);
+		prime++;
+	}
+}
+
 /* Processes small sieving primes using the very fast mod 30 loop */
 static inline void process_small_primes(
 		struct prime_set * set)
 {
-	unsigned int i;
-	struct bucket * buckets[64];
+	unsigned int subsegment, wheel_idx;
 
-	memcpy(buckets, set->small, sizeof(set->small));
-	memset(set->small, 0, sizeof(set->small));
-
-	for(i = 0; i < 64; i++) {
-		struct bucket * bucket = buckets[i];
-		struct bucket * to_return;
-		while(bucket != NULL)
+	for(subsegment = 0;
+	    subsegment < SMALL_SEGMENTS_PER_LARGE_SEGMENT;
+	    subsegment++)
+	{
+		struct bucket * buckets[64];
+		memcpy(buckets, set->small, sizeof(set->small));
+		memset(set->small, 0, sizeof(set->small));
+		for(wheel_idx = 0; wheel_idx < 64; wheel_idx++)
 		{
-			struct prime * prime = bucket->primes;
-			struct prime * p_end = &bucket->primes[bucket->count];
-			while(prime < p_end)
+			struct bucket * bucket = buckets[wheel_idx];
+			while(bucket != NULL)
 			{
-				process_small_prime(prime);
-				prime_set_list_append(set,
-				                      &set->small[prime->wheel_idx],
-				                      prime->prime_adj,
-				                      prime->next_byte,
-				                      prime->wheel_idx);
-				prime++;
+				struct bucket * to_return;
+				process_small_prime_bucket(subsegment, bucket, set);
+				to_return = bucket;
+				bucket = bucket->next;
+				prime_set_bucket_return(set, to_return);
 			}
-			to_return = bucket;
-			bucket = bucket->next;
-			prime_set_bucket_return(set, to_return);
 		}
 	}
 }
